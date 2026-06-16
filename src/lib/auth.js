@@ -36,6 +36,11 @@ export async function getSession() {
   return data?.session ?? null;
 }
 
+export async function getAccessToken() {
+  const session = await getSession();
+  return session?.access_token ?? null;
+}
+
 // Subscribe to auth changes. Returns an unsubscribe fn.
 export function onAuthChange(cb) {
   if (!isSupabaseConfigured) return () => {};

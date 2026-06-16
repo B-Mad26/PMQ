@@ -107,3 +107,19 @@ body.light .aurora .blob:nth-child(3) { background: radial-gradient(circle, #b9a
 body.light ::-webkit-scrollbar-thumb { background: rgba(40,52,120,.25); background-clip: padding-box; }
 
 @media print { .no-print { display: none !important; } body, body.light { background: #fff; } }
+
+/* ================= ACCESSIBILITY (ui-ux-pro-max checklist) ================= */
+button:not(:disabled), a[href], select, [role="button"] { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--color-indigo); outline-offset: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .aurora .blob { animation: none !important; }
+}

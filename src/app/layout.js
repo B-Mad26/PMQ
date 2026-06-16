@@ -5,7 +5,7 @@ const display = Fraunces({ subsets: ["latin"], variable: "--font-display", displ
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 
 export const metadata = {
-  title: "PM Quest — Master Project Management by Doing",
+  title: "PM Sim Lab — Master Project Management by Doing",
   description:
     "Learn project management by doing: realistic crisis scenarios, hands-on chart builders, AI coaching, and a certification you can share.",
 };

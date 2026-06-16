@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { signIn, signUp, signOut, getSession, onAuthChange } from "@/lib/auth";
+import { signIn, signUp, signOut, getSession, getAccessToken, onAuthChange } from "@/lib/auth";
 import { loadRemoteState, saveProfile, recordSolved, issueCertificate } from "@/lib/db";
 
 const DOMAINS = [
@@ -205,7 +205,7 @@ function scoreFor(diff, firstTry, usedHint, fast){ let base=60+diff*20, mult=1; 
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function useCountUp(target, dur=900){ const [v,setV]=useState(0); const ref=useRef(0);
-  useEffect(()=>{ let raf,start; const from=ref.current; const step=(t)=>{ if(!start)start=t; const p=clamp((t-start)/dur,0,1); const e=1-Math.pow(1-p,3); setV(Math.round(from+(target-from)*e)); if(p<1)raf=requestAnimationFrame(step); else ref.current=target; }; raf=requestAnimationFrame(step); return ()=>cancelAnimationFrame(raf); },[target]); return v; }
+  useEffect(()=>{ if(typeof window!=='undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){ setV(target); ref.current=target; return; } let raf,start; const from=ref.current; const step=(t)=>{ if(!start)start=t; const p=clamp((t-start)/dur,0,1); const e=1-Math.pow(1-p,3); setV(Math.round(from+(target-from)*e)); if(p<1)raf=requestAnimationFrame(step); else ref.current=target; }; raf=requestAnimationFrame(step); return ()=>cancelAnimationFrame(raf); },[target]); return v; }
 
 /* ============================== PRIMITIVES ============================== */
 function Bar({pct, tone='brand', h='h-2'}){ const grad=tone==='gold'?'linear-gradient(90deg,#e9c879,#f6e0a3)':tone==='health'?'linear-gradient(90deg,#fb7185,#4ade80)':'linear-gradient(90deg,#8b7cf0,#6d6bf5 50%,#5ec5ff)'; return <div className={`w-full ${h} rounded-full bg-white/[.07] overflow-hidden`}><div className={`bar ${h} rounded-full`} style={{width:pct+'%', background:grad}}/></div>; }
@@ -224,13 +224,13 @@ function Nav({route, setRoute, state, theme, setTheme, onLogout}){
   return (
     <div className={`sticky top-0 z-40 transition-all duration-300 ${scrolled?'bg-ink/80 backdrop-blur-xl border-b border-line':'border-b border-transparent'}`}>
       <div className="max-w-6xl mx-auto px-6 h-[72px] flex items-center gap-5">
-        <button onClick={()=>setRoute('home')} className="flex items-center gap-2.5"><span className="grid place-items-center w-9 h-9 rounded-xl btn-primary text-base">◆</span><span className="font-semibold text-[17px] tracking-tight">PM <span className="gradtext">Quest</span></span></button>
+        <button onClick={()=>setRoute('home')} className="flex items-center gap-2.5"><span className="grid place-items-center w-9 h-9 rounded-xl btn-primary text-base">◆</span><span className="font-semibold text-[17px] tracking-tight">PM <span className="gradtext">Sim Lab</span></span></button>
         <nav className="hidden md:flex items-center gap-1 ml-2 p-1 rounded-full border border-line bg-white/[.02]">{tabs.map(([k,l])=>(<button key={k} onClick={()=>setRoute(k)} className={`px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all ${route===k?'bg-white/10 text-white shadow-sm':'text-mute hover:text-white'}`}>{l}</button>))}</nav>
         <div className="ml-auto flex items-center gap-3 text-sm">
-          <button onClick={()=>setTheme(theme==='light'?'dark':'light')} title="Toggle theme" className="grid place-items-center w-9 h-9 rounded-full border border-line bg-white/[.02] hover:bg-white/[.06] transition text-[15px]">{theme==='light'?'🌙':'☀️'}</button>
+          <button onClick={()=>setTheme(theme==='light'?'dark':'light')} title="Toggle theme" aria-label={theme==='light'?'Switch to dark mode':'Switch to light mode'} className="grid place-items-center w-9 h-9 rounded-full border border-line bg-white/[.02] hover:bg-white/[.06] transition text-[15px]"><span aria-hidden="true">{theme==='light'?'🌙':'☀️'}</span></button>
           {state.auth ? (<>
             <span className="hidden sm:inline-flex items-center gap-1.5 text-warn text-[13px]">🔥 {state.streak}</span>
-            <span className="inline-flex items-baseline gap-1.5 font-semibold text-[14px]"><span className="gradtext">{pmp.toLocaleString()}</span><span className="text-mute2 font-normal text-[11px]">PMP</span></span>
+            <span className="inline-flex items-baseline gap-1.5 font-semibold text-[14px]"><span className="gradtext">{pmp.toLocaleString()}</span><span className="text-mute2 font-normal text-[11px]">XP</span></span>
             <span className="hidden md:inline-flex px-3 py-1.5 rounded-full border border-line bg-white/[.02] text-[12px]">{state.premium?'★ Senior PM':'Junior PM'} · Lv{state.level}</span>
             <div className="flex items-center gap-2">
               <span title={state.auth.email} className="grid place-items-center w-9 h-9 rounded-full btn-primary text-[13px] font-semibold">{(state.auth.name||'U').slice(0,1).toUpperCase()}</span>
@@ -281,8 +281,8 @@ function Home({setRoute}){
 
       <section className="py-8 border-y border-line"><div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">{[{num:SCENARIOS.length,sub:'crisis scenarios'},{num:5,sub:'chart builders'},{static:'60–90 min',sub:'of gameplay'},{num:94,suffix:'%',sub:'exam pass rate'}].map((s,i)=>(<StatNum key={i} stat={s}/>))}</div></section>
 
-      <section className="py-20"><Kicker>Why PM Quest is different</Kicker><h2 className="display text-[clamp(2rem,3.6vw,3rem)] mt-4 max-w-2xl leading-tight">Not another video course. You make decisions and build the artifacts.</h2>
-        <div className="mt-12 grid md:grid-cols-3 gap-5">{[['◆','Real situations, not trivia',`${SCENARIOS.length} scenarios modelled on the messes PMs actually face — with shuffled answers and distractor detail, just like the real exam.`],['▦','Hands-on Charts Lab','Five interactive builders, each with a realistic project brief: build a Gantt, recover a project via EVM, clean up a RACI, finish a burndown. Earn PMP for hitting each target.'],['✦','Adaptive AI coach + certification','Ask the AI when you\'re stuck, get instant Outcome → Why → Better-move feedback, then a timed exam that issues a shareable certificate.']].map((c,i)=>(<div key={i} className="card card-hover p-6"><div className="text-2xl gradtext">{c[0]}</div><div className="mt-3 text-[17px] font-semibold">{c[1]}</div><div className="text-[14px] text-mute mt-2 leading-relaxed">{c[2]}</div></div>))}</div>
+      <section className="py-20"><Kicker>Why PM Sim Lab is different</Kicker><h2 className="display text-[clamp(2rem,3.6vw,3rem)] mt-4 max-w-2xl leading-tight">Not another video course. You make decisions and build the artifacts.</h2>
+        <div className="mt-12 grid md:grid-cols-3 gap-5">{[['◆','Real situations, not trivia',`${SCENARIOS.length} scenarios modelled on the messes PMs actually face — with shuffled answers and distractor detail, just like the real exam.`],['▦','Hands-on Charts Lab','Five interactive builders, each with a realistic project brief: build a Gantt, recover a project via EVM, clean up a RACI, finish a burndown. Earn XP for hitting each target.'],['✦','Adaptive AI coach + certification','Ask the AI when you\'re stuck, get instant Outcome → Why → Better-move feedback, then a timed exam that issues a shareable certificate.']].map((c,i)=>(<div key={i} className="card card-hover p-6"><div className="text-2xl gradtext">{c[0]}</div><div className="mt-3 text-[17px] font-semibold">{c[1]}</div><div className="text-[14px] text-mute mt-2 leading-relaxed">{c[2]}</div></div>))}</div>
       </section>
 
       <section className="py-16 border-t border-line"><div className="flex items-end justify-between flex-wrap gap-4"><div><Kicker>The Charts Lab</Kicker><h2 className="display text-[clamp(2rem,3.6vw,3rem)] mt-4 leading-tight">The five charts every<br/>PM must build.</h2></div><button onClick={()=>setRoute('charts')} className="btn-ghost px-6 py-3 rounded-2xl text-[14px] font-medium">Try the builders →</button></div>
@@ -307,7 +307,7 @@ function Home({setRoute}){
 /* ============================== CHART BUILDERS ============================== */
 function svgLine(points){ return points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' '); }
 function Brief({code, children}){ return (<div className="mb-4 rounded-2xl border border-indigo/30 bg-indigo/[.07] p-4"><div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-indigo">📋 Project brief · {code}</div><div className="mt-1.5 text-[13.5px] text-slate-200 leading-relaxed">{children}</div></div>); }
-function Mission({done, target, reward}){ return (<div className={`mb-5 rounded-2xl border p-4 ${done?'border-good/40 bg-good/[.06]':'border-gold/30 bg-gold/[.05]'}`}><div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider"><span>{done?'✓':'🎯'}</span><span className={done?'text-good':'goldtext'}>Build challenge {done?'complete':'· +'+reward+' PMP'}</span></div><p className="mt-1.5 text-[13.5px] text-slate-200">{target}</p></div>); }
+function Mission({done, target, reward}){ return (<div className={`mb-5 rounded-2xl border p-4 ${done?'border-good/40 bg-good/[.06]':'border-gold/30 bg-gold/[.05]'}`}><div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider"><span>{done?'✓':'🎯'}</span><span className={done?'text-good':'goldtext'}>Build challenge {done?'complete':'· +'+reward+' XP'}</span></div><p className="mt-1.5 text-[13.5px] text-slate-200">{target}</p></div>); }
 
 function GanttBuilder({done, onWin}){
   const [tasks,setTasks]=useState([{id:1,name:'Discovery & scope',start:0,dur:5,dep:null},{id:2,name:'UX / design',start:5,dur:6,dep:1},{id:3,name:'Front-end build',start:11,dur:8,dep:2},{id:4,name:'Content (parallel)',start:5,dur:6,dep:1},{id:5,name:'QA & launch',start:19,dur:4,dep:3}]);
@@ -407,7 +407,7 @@ function ChartsLab({initial='gantt', state, dispatch}){
   const Active=(CHART_TABS.find(t=>t.key===tab)||CHART_TABS[0]).C; const onWin=(key,reward)=>dispatch({type:'mission',key,reward}); const completed=state.missions.length;
   return (<div className="max-w-6xl mx-auto px-6 py-10">
     <div className="flex items-end justify-between flex-wrap gap-3"><div><Kicker>Charts Lab</Kicker><h1 className="display text-[clamp(2rem,3.6vw,2.8rem)] mt-3">Build the charts PMs live in.</h1></div><Chip tone={completed>=5?'good':'gold'}>{completed} / 5 challenges complete</Chip></div>
-    <p className="text-mute text-[15px] mt-2 max-w-2xl">Each builder opens with a real project brief and a build challenge worth PMP. Construct the chart from the details — change the inputs and it recomputes live.</p>
+    <p className="text-mute text-[15px] mt-2 max-w-2xl">Each builder opens with a real project brief and a build challenge worth XP. Construct the chart from the details — change the inputs and it recomputes live.</p>
     <div className="mt-7 flex flex-wrap gap-2">{CHART_TABS.map(t=>{ const m='m_'+(t.key==='burndown'?'burn':t.key); const ok=state.missions.includes(m); return (<button key={t.key} onClick={()=>setTab(t.key)} className={`px-4 py-2.5 rounded-xl text-[13.5px] font-medium border transition ${tab===t.key?'border-indigo/60 bg-indigo/15 text-white':'border-line text-mute hover:text-white hover:border-line2'}`}><span className="gradtext mr-1.5">{t.icon}</span>{t.label}{ok&&<span className="text-good ml-1.5">✓</span>}</button>); })}</div>
     <div className="mt-6 card ring-soft p-6 md:p-8 animate-rise"><Active done={state.missions} onWin={onWin}/></div>
   </div>);
@@ -453,7 +453,7 @@ function Login({onLogin, setRoute}){
     <div className="max-w-md mx-auto px-6 py-16">
       <button onClick={()=>setRoute('home')} className="text-mute hover:text-white text-[13px] mb-6 inline-flex items-center gap-1.5">◀ Back to home</button>
       <div className="card ring-soft p-8 animate-rise">
-        <div className="flex items-center gap-2.5"><span className="grid place-items-center w-9 h-9 rounded-xl btn-primary text-base">◆</span><span className="font-semibold text-[17px]">PM <span className="gradtext">Quest</span></span></div>
+        <div className="flex items-center gap-2.5"><span className="grid place-items-center w-9 h-9 rounded-xl btn-primary text-base">◆</span><span className="font-semibold text-[17px]">PM <span className="gradtext">Sim Lab</span></span></div>
         <h1 className="display text-3xl mt-5">{mode==='signin'?'Welcome back':'Create your account'}</h1>
         <p className="text-mute text-[14px] mt-1.5">{mode==='signin'?'Sign in to continue your certification journey.':'Start free — no card required to begin.'}</p>
         <div className="mt-6 grid grid-cols-3 gap-2">{[['google','G'],['microsoft','⊞'],['linkedin','in']].map(([p,sym])=>(<button key={p} onClick={()=>social(p)} className="btn-ghost py-2.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-1.5"><span className="text-mute">{sym}</span><span className="capitalize">{p}</span></button>))}</div>
@@ -467,7 +467,7 @@ function Login({onLogin, setRoute}){
         {notice && <p className="text-good text-[12.5px] mt-3">{notice}</p>}
         {mode==='signin' && <div className="text-right mt-2"><button className="text-[12px] text-mute hover:text-white">Forgot password?</button></div>}
         <button onClick={submit} disabled={busy} className="btn-primary w-full mt-4 py-3 rounded-xl text-[15px] disabled:opacity-60">{busy?'Please wait…':(mode==='signin'?'Sign in →':'Create account →')}</button>
-        <p className="text-center text-[13px] text-mute mt-5">{mode==='signin'?"New to PM Quest? ":"Already have an account? "}<button onClick={()=>{setMode(mode==='signin'?'signup':'signin');setErr('');}} className="text-indigo font-medium hover:underline">{mode==='signin'?'Create an account':'Sign in'}</button></p>
+        <p className="text-center text-[13px] text-mute mt-5">{mode==='signin'?"New to PM Sim Lab? ":"Already have an account? "}<button onClick={()=>{setMode(mode==='signin'?'signup':'signin');setErr('');}} className="text-indigo font-medium hover:underline">{mode==='signin'?'Create an account':'Sign in'}</button></p>
         <p className="text-center text-[11px] text-mute2 mt-4">🔒 Secured by Supabase Auth — passwords are hashed, never stored in plaintext.</p>
       </div>
     </div>
@@ -477,12 +477,21 @@ function Login({onLogin, setRoute}){
 /* ============================== PAYMENT PAGE ============================== */
 function Payment({state, onPaid, setRoute}){
   const inp="w-full px-4 py-3 rounded-xl bg-white/[.03] border border-line text-[14px] focus:border-indigo outline-none transition";
-  const sel="w-full px-4 py-3 rounded-xl bg-ink border border-line text-[14px] focus:border-indigo outline-none transition";
   const lbl="block text-[12px] text-mute mb-1.5";
-  const [busy,setBusy]=useState(false),[done,setDone]=useState(false);
-  const [card,setCard]=useState(''),[exp,setExp]=useState(''),[cvc,setCvc]=useState(''),[zip,setZip]=useState('');
-  const [chName,setChName]=useState(state.auth?.name||''),[email,setEmail]=useState(state.auth?.email||''),[country,setCountry]=useState('United States');
-  const pay=()=>{ setBusy(true); setTimeout(()=>{ setBusy(false); onPaid(); setDone(true); },1500); };
+  const [busy,setBusy]=useState(false),[done,setDone]=useState(false),[payErr,setPayErr]=useState('');
+  const [email,setEmail]=useState(state.auth?.email||'');
+  const pay=async()=>{
+    setBusy(true); setPayErr('');
+    try{
+      const token=await getAccessToken();
+      const res=await fetch('/api/checkout',{method:'POST',headers:{Authorization:`Bearer ${token||''}`}});
+      const data=await res.json();
+      if(data.url){ window.location.href=data.url; return; }      // → Stripe Checkout
+      if(data.alreadyOwned){ onPaid(); setDone(true); return; }
+      setPayErr(data.error||'Could not start checkout.');
+    }catch(e){ setPayErr(e?.message||'Could not reach the payment service.'); }
+    setBusy(false);
+  };
   if(state.premium && !done){ return (<div className="max-w-md mx-auto px-6 py-20 text-center"><div className="card ring-soft p-10"><div className="w-16 h-16 mx-auto rounded-full btn-primary grid place-items-center text-2xl">✓</div><h1 className="display text-3xl mt-4">You're already premium</h1><p className="text-mute mt-2 text-[14px]">Your certification track is unlocked. Jump back in.</p><button onClick={()=>setRoute('challenge')} className="btn-primary mt-6 px-7 py-3.5 rounded-2xl">Continue training →</button></div></div>); }
   if(done){ return (<div className="max-w-lg mx-auto px-6 py-20 text-center"><div className="card ring-soft p-10 animate-pop"><div className="w-20 h-20 mx-auto rounded-full btn-primary grid place-items-center text-3xl">✓</div><div className="mt-4 flex justify-center"><Chip tone="good">Payment successful</Chip></div><h1 className="display text-4xl mt-4">You're in! 🎉</h1><p className="text-mute mt-3 text-[14px]">Senior PM crises, the capstone, and the certification exam are now unlocked. A receipt has been sent to {email||'your email'}.</p><div className="mt-7 flex gap-3 justify-center flex-wrap"><button onClick={()=>setRoute('challenge')} className="btn-primary px-7 py-3.5 rounded-2xl">Start advanced training →</button><button onClick={()=>setRoute('dashboard')} className="btn-ghost px-7 py-3.5 rounded-2xl">Dashboard</button></div></div></div>); }
   return (
@@ -491,7 +500,7 @@ function Payment({state, onPaid, setRoute}){
       <div className="grid lg:grid-cols-[1fr,1.1fr] gap-6">
         <div className="card p-7 h-fit">
           <Kicker>Order summary</Kicker>
-          <h2 className="display text-2xl mt-4">PM Quest — Certification Track</h2>
+          <h2 className="display text-2xl mt-4">PM Sim Lab — Certification Track</h2>
           <p className="text-mute text-[13.5px] mt-1">One-time payment · lifetime access</p>
           <div className="mt-5 space-y-2.5 text-[14px]">{['Stages 4–6 — branching crisis simulations','Continuous capstone project','Five chart builders + project briefs','Timed exam + shareable certificate','Lifetime updates & new scenario packs'].map(x=>(<div key={x} className="flex items-center gap-2.5 text-slate-200"><span className="text-good">✓</span>{x}</div>))}</div>
           <div className="divider my-5"/>
@@ -501,15 +510,13 @@ function Payment({state, onPaid, setRoute}){
         <div className="card ring-soft p-7">
           <div className="flex items-center justify-between"><Kicker>Payment details</Kicker><span className="text-[11px] text-mute flex items-center gap-1.5">🔒 Secured by Stripe</span></div>
           <div className="mt-5 space-y-3">
-            <div><label className={lbl}>Cardholder name</label><input value={chName} onChange={e=>setChName(e.target.value)} className={inp} placeholder="Name on card"/></div>
             <div><label className={lbl}>Email for receipt</label><input value={email} onChange={e=>setEmail(e.target.value)} className={inp} placeholder="you@email.com"/></div>
-            <div><label className={lbl}>Card number</label><div className="relative"><input value={card} onChange={e=>setCard(e.target.value)} className={inp} placeholder="Demo: 4242 4242 4242 4242"/><span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-mute2 font-semibold">VISA</span></div></div>
-            <div className="grid grid-cols-3 gap-3"><div><label className={lbl}>Expiry</label><input value={exp} onChange={e=>setExp(e.target.value)} className={inp} placeholder="MM / YY"/></div><div><label className={lbl}>CVC</label><input value={cvc} onChange={e=>setCvc(e.target.value)} className={inp} placeholder="123"/></div><div><label className={lbl}>ZIP</label><input value={zip} onChange={e=>setZip(e.target.value)} className={inp} placeholder="00000"/></div></div>
-            <div><label className={lbl}>Country</label><select value={country} onChange={e=>setCountry(e.target.value)} className={sel}>{['United States','United Kingdom','Canada','Australia','India','Germany','Other'].map(c=>(<option key={c}>{c}</option>))}</select></div>
+            <div className="rounded-xl border border-line bg-white/[.02] p-4 flex items-start gap-3"><span className="text-[18px] mt-0.5" aria-hidden="true">🔒</span><p className="text-[13px] text-mute leading-relaxed">You'll enter your card on Stripe's secure checkout. PM Sim Lab never sees or stores your card number. Test mode accepts <span className="text-white font-medium">4242 4242 4242 4242</span>, any future expiry, any CVC.</p></div>
           </div>
-          <button onClick={pay} disabled={busy} className="btn-gold w-full mt-5 py-3.5 rounded-xl disabled:opacity-60">{busy?'Processing securely…':'Pay $49.00 →'}</button>
+          <button onClick={pay} disabled={busy} className="btn-gold w-full mt-5 py-3.5 rounded-xl disabled:opacity-60">{busy?'Redirecting to secure checkout…':'Pay $49.00 →'}</button>
+          {payErr && <p className="mt-3 text-center text-bad text-[12.5px]">{payErr}</p>}
           <div className="mt-3 flex items-center justify-center gap-3 text-[11px] text-mute2"><span>PCI-DSS</span><span>·</span><span>3-D Secure</span><span>·</span><span>256-bit TLS</span></div>
-          <p className="mt-2 text-center text-[11px] text-mute2">Demo checkout — no real card is processed.</p>
+          <p className="mt-2 text-center text-[11px] text-mute2">Card is processed by Stripe — PM Sim Lab never sees your card number.</p>
         </div>
       </div>
     </div>
@@ -564,7 +571,7 @@ function Challenge({state, dispatch, setRoute, openChart}){
         <div className="mt-7 space-y-3">{opts.map((o,i)=>{ let cls='border-line hover:border-line2 hover:bg-white/[.04]'; if(submitted){ if(o.correct)cls='border-good/60 bg-good/[.08]'; else if(i===chosen)cls='border-bad/60 bg-bad/[.08]'; else cls='border-line opacity-50'; } else if(i===chosen)cls='border-indigo/70 bg-indigo/[.1] shadow-[0_0_0_1px_rgba(109,107,245,.4)]'; return (<button key={i} disabled={submitted&&correctChosen} onClick={()=>!submitted&&setChosen(i)} className={`w-full text-left px-5 py-4 rounded-2xl border transition-all flex items-center gap-3.5 ${cls}`}><span className="grid place-items-center w-7 h-7 rounded-lg bg-white/5 border border-line text-[12px] font-semibold shrink-0">{String.fromCharCode(65+i)}</span><span className="text-[14.5px]">{o.t}</span>{submitted&&o.correct&&<span className="ml-auto text-good text-lg">✓</span>}{submitted&&i===chosen&&!o.correct&&<span className="ml-auto text-bad text-lg">✕</span>}</button>); })}</div>
         {!submitted && (<button onClick={submit} disabled={chosen==null} className="btn-primary mt-7 px-8 py-3.5 rounded-2xl text-[15px] disabled:opacity-30 disabled:shadow-none">Submit decision ▸</button>)}
         {submitted && (<div className={`mt-7 rounded-2xl border p-5 animate-rise ${correctChosen?'border-good/40 bg-good/[.05]':'border-bad/40 bg-bad/[.05]'}`}>
-          <div className="flex items-center gap-3"><span className={`grid place-items-center w-9 h-9 rounded-xl text-lg ${correctChosen?'bg-good/15 text-good':'bg-bad/15 text-bad'}`}>{correctChosen?'⚡':'✕'}</span><div className="font-semibold text-[15px]">{correctChosen?<>Solid call. <span className="gradtext ml-1">+{awardPts} PMP</span></>:'Not quite — here\'s what happened.'}</div></div>
+          <div className="flex items-center gap-3"><span className={`grid place-items-center w-9 h-9 rounded-xl text-lg ${correctChosen?'bg-good/15 text-good':'bg-bad/15 text-bad'}`}>{correctChosen?'⚡':'✕'}</span><div className="font-semibold text-[15px]">{correctChosen?<>Solid call. <span className="gradtext ml-1">+{awardPts} XP</span></>:'Not quite — here\'s what happened.'}</div></div>
           {correctChosen ? (<div className="mt-4 grid gap-2.5 text-[14px]"><p><span className="text-mute font-medium">Outcome → </span>The situation stabilises and trust holds.</p><p><span className="text-mute font-medium">Why → </span>{sc.why}</p><p><span className="text-mute font-medium">Even better → </span>{sc.better}</p>{award&&award.badge&&<div className="mt-1"><Chip tone="good">🏅 Badge unlocked — {award.badge}</Chip></div>}</div>):(<div className="mt-4 grid gap-2.5 text-[14px]"><p><span className="text-mute font-medium">Why this hurts → </span>{sc.why}</p><p className="text-mute italic">{MENTOR}: "Reset and look again — strip the distractor details first."</p></div>)}
           <div className="mt-5 flex gap-3">{correctChosen?<button onClick={advance} className="btn-primary px-6 py-3 rounded-xl text-[14px]">Next challenge →</button>:<button onClick={()=>{setSubmitted(false);setChosen(null);}} className="btn-ghost px-6 py-3 rounded-xl text-[14px] font-medium">Try again</button>}<button onClick={()=>setRoute('dashboard')} className="btn-ghost px-6 py-3 rounded-xl text-[14px] font-medium">Dashboard</button></div>
         </div>)}
@@ -572,7 +579,7 @@ function Challenge({state, dispatch, setRoute, openChart}){
       <div className="card ring-soft p-6 h-fit lg:sticky lg:top-24">
         <div className="flex items-center gap-3.5"><div className="relative"><div className="w-12 h-12 rounded-2xl btn-primary grid place-items-center text-xl">✦</div><span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-good border-2 border-ink animate-glow"/></div><div><div className="font-semibold text-[15px]">{MENTOR}</div><div className="text-[12px] text-mute">Your AI mentor · online</div></div></div>
         <p className="mt-5 text-[14px] text-slate-200 bg-white/[.03] border border-line rounded-2xl p-4 leading-relaxed">"{sc.coach}"</p>
-        {!submitted && (showHint?<p className="mt-3 text-[13.5px] text-warn bg-warn/[.07] border border-warn/25 rounded-2xl p-4 animate-rise leading-relaxed">💡 Identify what's relevant vs noise, then pick the option that protects the project's core objective — not the easiest or loudest one.</p>:<button onClick={()=>{setShowHint(true);setUsedHint(true);}} className="btn-ghost mt-3 w-full text-[13.5px] py-2.5 rounded-xl">💡 Reveal hint <span className="text-mute2">(−10 PMP)</span></button>)}
+        {!submitted && (showHint?<p className="mt-3 text-[13.5px] text-warn bg-warn/[.07] border border-warn/25 rounded-2xl p-4 animate-rise leading-relaxed">💡 Identify what's relevant vs noise, then pick the option that protects the project's core objective — not the easiest or loudest one.</p>:<button onClick={()=>{setShowHint(true);setUsedHint(true);}} className="btn-ghost mt-3 w-full text-[13.5px] py-2.5 rounded-xl">💡 Reveal hint <span className="text-mute2">(−10 XP)</span></button>)}
         <AskMira sc={sc}/>
         {sc.chart && <button onClick={()=>openChart(sc.chart)} className="btn-ghost mt-3 w-full text-[13.5px] py-2.5 rounded-xl">↗ Practise the {chartName} chart</button>}
         <div className="divider my-6"/><div className="text-[11px] uppercase tracking-[.2em] text-mute">Adaptive engine</div>
@@ -610,8 +617,8 @@ function Exam({state, dispatch, setRoute}){
 /* ============================== CERTIFICATE ============================== */
 function Certificate({state, setRoute}){
   const id = state.certId || 'PMQ-2026-'+String(1000+(state.score||0)+state.pmp%900).slice(0,5);
-  const verify='https://pmquest.app/verify/'+id;
-  const shareText=`I'm now a Certified PM Quest Practitioner — scored ${state.score||90}% on the project management certification exam! ${verify}`;
+  const verify='https://pmsimlab.com/verify/'+id;
+  const shareText=`I'm now a Certified PM Sim Lab Practitioner — scored ${state.score||90}% on the project management certification exam! ${verify}`;
   const enc=encodeURIComponent, share={
     x:`https://twitter.com/intent/tweet?text=${enc(shareText)}`,
     linkedin:`https://www.linkedin.com/sharing/share-offsite/?url=${enc(verify)}`,
@@ -626,12 +633,12 @@ function Certificate({state, setRoute}){
       <div className="rounded-[18px] border border-gold/30 p-10 text-center relative overflow-hidden" style={{background:'radial-gradient(120% 90% at 50% 0%, rgba(233,200,121,.10), transparent 60%)'}}>
         <div className="absolute inset-3 rounded-[14px] border border-gold/15 pointer-events-none"/>
         <div className="relative">
-          <div className="flex items-center justify-center gap-2 text-gold"><span className="grid place-items-center w-9 h-9 rounded-xl btn-gold text-base">◆</span><span className="font-semibold tracking-tight">PM Quest</span></div>
+          <div className="flex items-center justify-center gap-2 text-gold"><span className="grid place-items-center w-9 h-9 rounded-xl btn-gold text-base">◆</span><span className="font-semibold tracking-tight">PM Sim Lab</span></div>
           <div className="text-[11px] uppercase tracking-[.35em] text-mute mt-6">Certificate of Completion</div>
-          <h1 className="display text-4xl mt-4">Certified PM Quest Practitioner</h1>
+          <h1 className="display text-4xl mt-4">Certified PM Sim Lab Practitioner</h1>
           <p className="text-mute mt-5 text-[14px]">This certifies that</p>
-          <div className="display text-3xl goldtext mt-2">{state.auth?.name || 'PM Quest Member'}</div>
-          <p className="text-mute mt-4 text-[14px] max-w-md mx-auto">has completed the PM Quest program — {SCENARIOS.length} situational scenarios, five chart competencies, and the timed certification exam — demonstrating applied skill across risk, stakeholders, planning, Agile and budget.</p>
+          <div className="display text-3xl goldtext mt-2">{state.auth?.name || 'PM Sim Lab Member'}</div>
+          <p className="text-mute mt-4 text-[14px] max-w-md mx-auto">has completed the PM Sim Lab program — {SCENARIOS.length} situational scenarios, five chart competencies, and the timed certification exam — demonstrating applied skill across risk, stakeholders, planning, Agile and budget.</p>
           <div className="mt-8 flex items-center justify-center gap-10 text-[12px]"><div><div className="text-mute2">Exam score</div><div className="text-white font-semibold text-[15px]">{state.score||90}%</div></div><div><div className="text-mute2">Date</div><div className="text-white font-semibold text-[15px]">June 10, 2026</div></div><div><div className="text-mute2">Credential ID</div><div className="text-white font-semibold text-[15px]">{id}</div></div></div>
           <div className="mt-8 flex items-center justify-center gap-2 text-[11px] text-mute2"><span>🔒 Verify at {verify.replace('https://','')}</span></div>
         </div>
@@ -663,16 +670,16 @@ function Dashboard({state, setRoute, openGate}){
   return (<div className="max-w-6xl mx-auto px-6 py-8">
     <div className="flex items-end justify-between flex-wrap gap-4"><div><Kicker>Your dashboard</Kicker><h1 className="display text-[clamp(2rem,3.6vw,2.8rem)] mt-3">Welcome back, {(state.auth?.name||'there').split(' ')[0]}.</h1><p className="text-mute text-[14px] mt-1">{state.premium?'Senior PM':'Junior PM'} · Level {state.level} · <span className="text-warn">🔥 {state.streak}-day streak</span></p></div><button onClick={()=>setRoute('challenge')} className="btn-primary px-6 py-3.5 rounded-2xl text-[14px]">Continue training →</button></div>
     <div className="mt-8 grid lg:grid-cols-3 gap-5">
-      <div className="card card-hover p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Total PMP earned</div><div className="display text-5xl gradtext mt-3">{pmp.toLocaleString()}</div><div className="text-[13px] text-mute mt-2">{state.solved.length}/{SCENARIOS.length} scenarios · {state.missions.length}/5 challenges · {state.badges.length} badges</div></div>
+      <div className="card card-hover p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Total XP earned</div><div className="display text-5xl gradtext mt-3">{pmp.toLocaleString()}</div><div className="text-[13px] text-mute mt-2">{state.solved.length}/{SCENARIOS.length} scenarios · {state.missions.length}/5 challenges · {state.badges.length} badges</div></div>
       <div className="card card-hover p-6 flex items-center gap-5"><Ring pct={certPct} label={certPct+'%'} sub="Program"/><div><div className="text-[11px] uppercase tracking-[.2em] text-mute">Certification</div><div className="text-[15px] mt-2 leading-snug text-slate-200">{state.certified?'Certified Practitioner ✓':state.premium?(examReady?'Exam unlocked':'Premium track active'):'Locked — Junior tier'}</div>{!state.premium&&<button onClick={openGate} className="mt-3 goldtext text-[13px] font-medium hover:underline">🔒 Unlock for $49 →</button>}{state.certified?<button onClick={()=>setRoute('cert')} className="mt-3 goldtext text-[13px] font-medium hover:underline">View certificate →</button>:examReady?<button onClick={()=>setRoute('exam')} className="mt-3 text-indigo text-[13px] font-medium hover:underline">Take the exam →</button>:null}</div></div>
-      <div className="card card-hover p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Cohort rank</div><div className="display text-5xl mt-3">#{rank}</div><div className="text-[13px] text-mute mt-2">Climbs as you earn PMP</div></div>
+      <div className="card card-hover p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Cohort rank</div><div className="display text-5xl mt-3">#{rank}</div><div className="text-[13px] text-mute mt-2">Climbs as you earn XP</div></div>
     </div>
     <div className="mt-5 grid lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 card p-6"><div className="flex items-center justify-between"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Skill tree · mastery</div><Chip>5 disciplines</Chip></div><div className="mt-6 space-y-4">{DOMAINS.map(d=>{ const m=state.mastery[d.key]||0; return (<div key={d.key} className="flex items-center gap-4"><div className="w-48 flex items-center gap-2.5 text-[14px]"><span className="gradtext">{d.icon}</span>{d.label}</div><div className="flex-1"><Bar pct={m}/></div><div className="w-16 text-right text-[13px] tabular-nums text-mute">{m}%{m>=100?' 🏆':m>=70?' ✓':''}</div></div>); })}</div></div>
       <div className="card p-6 relative overflow-hidden"><div className="absolute -top-16 -right-16 w-40 h-40 bg-indigo/20 blur-3xl rounded-full"/><div className="relative"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl btn-primary grid place-items-center text-sm">✦</div><div className="text-[11px] uppercase tracking-[.2em] text-mute">AI coach insights</div></div><p className="mt-4 text-[14px] text-slate-200 leading-relaxed">{state.solved.length===0?`"Run your first scenario and I'll start mapping your strengths."`:`"You're strongest in ${strong.label} (${state.mastery[strong.key]||0}%). I've queued targeted ${weak.label} scenarios to lift your weakest area."`}</p><button onClick={()=>setRoute('challenge')} className="btn-ghost mt-5 w-full py-2.5 rounded-xl text-[13.5px] font-medium">Train weak spot →</button></div></div>
     </div>
     <div className="mt-5 grid lg:grid-cols-3 gap-5 mb-6">
-      <div className="card p-6 relative overflow-hidden"><div className="absolute -bottom-16 -left-10 w-44 h-44 bg-gold/15 blur-3xl rounded-full"/><div className="relative"><Chip tone="gold">◆ Refer & earn</Chip><h3 className="display text-xl mt-3">Invite your team</h3><p className="text-[13px] text-mute mt-2 leading-relaxed">Share your code. When a colleague certifies, you both earn <b className="text-white">+500 PMP</b> and a bonus scenario pack.</p><div className="mt-4 flex items-center gap-2"><code className="flex-1 text-center bg-white/[.04] border border-line rounded-xl py-2.5 text-[14px] tracking-widest goldtext font-semibold">{((state.auth?.name||'PM').split(' ')[0]).toUpperCase().slice(0,8)}-PM49</code><button onClick={()=>setCopied(true)} className="btn-gold px-4 py-2.5 rounded-xl text-[13px]">{copied?'Copied ✓':'Copy'}</button></div></div></div>
+      <div className="card p-6 relative overflow-hidden"><div className="absolute -bottom-16 -left-10 w-44 h-44 bg-gold/15 blur-3xl rounded-full"/><div className="relative"><Chip tone="gold">◆ Refer & earn</Chip><h3 className="display text-xl mt-3">Invite your team</h3><p className="text-[13px] text-mute mt-2 leading-relaxed">Share your code. When a colleague certifies, you both earn <b className="text-white">+500 XP</b> and a bonus scenario pack.</p><div className="mt-4 flex items-center gap-2"><code className="flex-1 text-center bg-white/[.04] border border-line rounded-xl py-2.5 text-[14px] tracking-widest goldtext font-semibold">{((state.auth?.name||'PM').split(' ')[0]).toUpperCase().slice(0,8)}-PM49</code><button onClick={()=>setCopied(true)} className="btn-gold px-4 py-2.5 rounded-xl text-[13px]">{copied?'Copied ✓':'Copy'}</button></div></div></div>
       <div className="card p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Achievements</div><div className="mt-4 flex flex-wrap gap-2"><span className="text-[12px] text-mute2 w-full mb-1">{state.badges.length}/{allBadges.length} unlocked</span>{allBadges.map(b=>{ const has=state.badges.includes(b); return <div key={b} className={`px-2.5 py-1.5 rounded-lg border text-[11.5px] flex items-center gap-1.5 transition ${has?'border-good/40 bg-good/[.07] text-white':'border-line text-mute2'}`}><span className={has?'':'opacity-40'}>{has?'🏅':'◇'}</span>{b}</div>; })}</div></div>
       <div className="card p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Recent activity</div><div className="mt-4 space-y-3 text-[14px]">{state.log.length===0&&<p className="text-mute2">No activity yet — go solve something.</p>}{state.log.slice(-6).reverse().map((l,i)=>(<div key={i} className="flex items-center justify-between border-b border-line/60 pb-2.5 last:border-0"><span className="text-slate-300 flex items-center gap-2"><span className="text-good">✓</span>{l.title}</span><span className="gradtext font-medium">+{l.pts}</span></div>))}</div></div>
     </div>
@@ -704,6 +711,26 @@ export default function App(){
   useEffect(()=>{ if(hydrated){ try{ localStorage.setItem('pmq_state', JSON.stringify(state)); }catch(e){} } },[state, hydrated]);
   useEffect(()=>{ document.body.classList.toggle('light', theme==='light'); try{ localStorage.setItem('pmq_theme', theme); }catch(e){} },[theme]);
   useEffect(()=>{ window.scrollTo(0,0); },[route]);
+
+  // Returning from Stripe Checkout: the webhook grants the entitlement async, so poll
+  // loadRemoteState until premium shows up, then drop the user on the dashboard.
+  useEffect(()=>{
+    if(typeof window==='undefined') return;
+    const p=new URLSearchParams(window.location.search);
+    const status=p.get('checkout');
+    if(!status) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    if(status!=='success') return;
+    (async()=>{
+      for(let i=0;i<6;i++){
+        const s=await getSession();
+        if(s?.user){ const remote=await loadRemoteState(s.user.id); if(remote){ setState(x=>({...x,...remote})); if(remote.premium) break; } }
+        await new Promise(r=>setTimeout(r,1500));
+      }
+      setRoute('dashboard');
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   // Supabase session is the source of truth for auth: bootstrap once, then subscribe.
   useEffect(()=>{
@@ -751,7 +778,7 @@ export default function App(){
   useEffect(()=>{
     if(userId && state.certified && !certIssuedRef.current){
       certIssuedRef.current=true;
-      issueCertificate(userId, state.auth?.name||'PM Quest Member', state.score).then(cid=>{ if(cid) setState(s=>({...s, certId:cid})); });
+      issueCertificate(userId, state.auth?.name||'PM Sim Lab Member', state.score).then(cid=>{ if(cid) setState(s=>({...s, certId:cid})); });
     }
   },[userId, state.certified]);
 
@@ -775,7 +802,7 @@ export default function App(){
     {route==='exam' && <Exam state={state} dispatch={dispatch} setRoute={navigate}/>}
     {route==='cert' && <Certificate state={state} setRoute={navigate}/>}
     {route==='dashboard' && <Dashboard state={state} setRoute={navigate} openGate={()=>navigate('payment')}/>}
-    <footer className="no-print border-t border-line mt-8"><div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] text-mute"><div className="flex items-center gap-2.5"><span className="grid place-items-center w-7 h-7 rounded-lg btn-primary text-[12px]">◆</span>PM <span className="gradtext font-semibold">Quest</span></div><p className="text-mute2">Interactive prototype · scenarios & feedback are AI-generated at runtime in production.</p></div></footer>
+    <footer className="no-print border-t border-line mt-8"><div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] text-mute"><div className="flex items-center gap-2.5"><span className="grid place-items-center w-7 h-7 rounded-lg btn-primary text-[12px]">◆</span>PM <span className="gradtext font-semibold">Sim Lab</span></div><p className="text-mute2">Interactive prototype · scenarios & feedback are AI-generated at runtime in production.</p></div></footer>
   </div>
   </>);
 }
