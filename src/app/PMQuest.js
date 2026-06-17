@@ -246,10 +246,10 @@ function Nav({route, setRoute, state, theme, setTheme, onLogout}){
 }
 
 /* ============================== HOME ============================== */
-const TESTIMONIALS=[
-  { q:"The scenarios feel like my actual job. I used the EMV framing in a real steering committee the next week.", n:"Dana R.", r:"Senior PM, fintech" },
-  { q:"Building a live Gantt and watching the critical path move finally made it click. Passed my PMP first try.", n:"Marcus L.", r:"Delivery Lead, SaaS" },
-  { q:"I've referred my whole PMO. Best $49 our team has spent — it's not a video course, you actually do the work.", n:"Priya S.", r:"PMO Director" },
+const HOW_IT_WORKS=[
+  ['①','Face a real scenario',`A messy, realistic PM situation with shuffled options and distractor detail — you make the call under a timer.`],
+  ['②','Get instant AI coaching',`Coach Mira breaks down the outcome, the why, and the better move — the moment you answer.`],
+  ['③','Earn your certificate',`Clear the free track, pass the timed exam, and get a shareable credential with a verifiable ID.`],
 ];
 function CountUp({target, suffix=''}){ const v=useCountUp(target,1100); return <>{v}{suffix}</>; }
 function StatNum({stat}){
@@ -262,11 +262,11 @@ function Home({setRoute}){
     <div className="max-w-6xl mx-auto px-6">
       <section className="grid lg:grid-cols-[1.05fr,.95fr] gap-14 items-center pt-20 pb-16">
         <div>
-          <div className="animate-rise" style={{animationDelay:'0s'}}><Chip tone="gold">◆ Trusted by 12,400 project managers</Chip></div>
+          <div className="animate-rise" style={{animationDelay:'0s'}}><Chip tone="gold">◆ 25 scenarios · 5 chart builders · 1 certification</Chip></div>
           <h1 className="display mt-6 text-[clamp(2.6rem,5.4vw,4.4rem)] leading-[1.02] font-medium animate-rise" style={{animationDelay:'.08s'}}>Master project management by <span className="gradtext italic">doing</span>, not watching.</h1>
           <p className="mt-6 text-[17px] leading-relaxed text-mute max-w-xl animate-rise" style={{animationDelay:'.18s'}}>{SCENARIOS.length} realistic crisis scenarios, five hands-on chart builders with project briefs, and a timed certification exam. 60–90 minutes of decisions that mirror the real job — with AI coaching in seconds.</p>
           <div className="mt-9 flex flex-wrap gap-3.5 animate-rise" style={{animationDelay:'.28s'}}><button onClick={()=>setRoute('challenge')} className="btn-primary px-7 py-3.5 rounded-2xl text-[15px]">Start free diagnostic →</button><button onClick={()=>setRoute('charts')} className="btn-ghost px-7 py-3.5 rounded-2xl text-[15px] font-medium">Open the Charts Lab</button></div>
-          <div className="mt-8 flex items-center gap-6 text-[13px] text-mute animate-rise" style={{animationDelay:'.36s'}}><span className="flex items-center gap-2"><span className="text-gold">★★★★★</span> 4.8 average</span><span className="h-4 w-px bg-line"/><span>Free through Junior PM · <span className="text-white font-medium">$49</span> to certify</span></div>
+          <div className="mt-8 flex items-center gap-6 text-[13px] text-mute animate-rise" style={{animationDelay:'.36s'}}><span className="flex items-center gap-2"><span className="text-good">✓</span> Free to start — no card required</span><span className="h-4 w-px bg-line"/><span>Free through Junior PM · <span className="text-white font-medium">$49</span> to certify</span></div>
         </div>
         <div className="relative animate-rise" style={{animationDelay:'.1s'}}>
           <div className="absolute -inset-6 bg-gradient-to-tr from-indigo/20 via-transparent to-sky/20 blur-2xl rounded-full"/>
@@ -279,7 +279,7 @@ function Home({setRoute}){
         </div>
       </section>
 
-      <section className="py-8 border-y border-line"><div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">{[{num:SCENARIOS.length,sub:'crisis scenarios'},{num:5,sub:'chart builders'},{static:'60–90 min',sub:'of gameplay'},{num:94,suffix:'%',sub:'exam pass rate'}].map((s,i)=>(<StatNum key={i} stat={s}/>))}</div></section>
+      <section className="py-8 border-y border-line"><div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">{[{num:SCENARIOS.length,sub:'crisis scenarios'},{num:5,sub:'chart builders'},{static:'60–90 min',sub:'of gameplay'},{static:'70%',sub:'to certify'}].map((s,i)=>(<StatNum key={i} stat={s}/>))}</div></section>
 
       <section className="py-20"><Kicker>Why PM Sim Lab is different</Kicker><h2 className="display text-[clamp(2rem,3.6vw,3rem)] mt-4 max-w-2xl leading-tight">Not another video course. You make decisions and build the artifacts.</h2>
         <div className="mt-12 grid md:grid-cols-3 gap-5">{[['◆','Real situations, not trivia',`${SCENARIOS.length} scenarios modelled on the messes PMs actually face — with shuffled answers and distractor detail, just like the real exam.`],['▦','Hands-on Charts Lab','Five interactive builders, each with a realistic project brief: build a Gantt, recover a project via EVM, clean up a RACI, finish a burndown. Earn XP for hitting each target.'],['✦','Adaptive AI coach + certification','Ask the AI when you\'re stuck, get instant Outcome → Why → Better-move feedback, then a timed exam that issues a shareable certificate.']].map((c,i)=>(<div key={i} className="card card-hover p-6"><div className="text-2xl gradtext">{c[0]}</div><div className="mt-3 text-[17px] font-semibold">{c[1]}</div><div className="text-[14px] text-mute mt-2 leading-relaxed">{c[2]}</div></div>))}</div>
@@ -289,8 +289,8 @@ function Home({setRoute}){
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">{[['Gantt + critical path','▦'],['Risk heatmap','⚠︎'],['EVM / S-curve','◈'],['Burndown','⟳'],['RACI matrix','◎']].map((c,i)=>(<div key={i} className="card card-hover p-5"><div className="text-2xl gradtext">{c[1]}</div><div className="mt-4 font-semibold text-[15px]">{c[0]}</div><div className="text-[12.5px] text-mute mt-1">Brief + build challenge</div></div>))}</div>
       </section>
 
-      <section className="py-16 border-t border-line"><Kicker>Loved by PMs and their teams</Kicker><h2 className="display text-[clamp(2rem,3.6vw,3rem)] mt-4 mb-10 leading-tight">Worth every cent — and they tell their colleagues.</h2>
-        <div className="grid md:grid-cols-3 gap-5">{TESTIMONIALS.map((t,i)=>(<div key={i} className="card card-hover p-6"><div className="text-gold text-[14px]">★★★★★</div><p className="mt-3 text-[15px] leading-relaxed text-slate-200">"{t.q}"</p><div className="mt-5 flex items-center gap-3"><div className="w-9 h-9 rounded-full btn-primary grid place-items-center text-[13px] font-semibold">{t.n[0]}</div><div><div className="text-[13.5px] font-medium">{t.n}</div><div className="text-[12px] text-mute">{t.r}</div></div></div></div>))}</div>
+      <section className="py-16 border-t border-line"><Kicker>How it works</Kicker><h2 className="display text-[clamp(2rem,3.6vw,3rem)] mt-4 mb-10 leading-tight">Make the call. Get coached. Get certified.</h2>
+        <div className="grid md:grid-cols-3 gap-5">{HOW_IT_WORKS.map((c,i)=>(<div key={i} className="card card-hover p-6"><div className="text-2xl gradtext">{c[0]}</div><div className="mt-3 text-[17px] font-semibold">{c[1]}</div><div className="text-[14px] text-mute mt-2 leading-relaxed">{c[2]}</div></div>))}</div>
       </section>
 
       <section className="py-16 border-t border-line"><div className="grid lg:grid-cols-[1fr,.8fr] gap-6 items-stretch">
