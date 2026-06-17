@@ -478,15 +478,16 @@ function Login({onLogin, setRoute}){
 function Payment({state, onPaid, setRoute}){
   const inp="w-full px-4 py-3 rounded-xl bg-white/[.03] border border-line text-[14px] focus:border-indigo outline-none transition";
   const lbl="block text-[12px] text-mute mb-1.5";
-  const [busy,setBusy]=useState(false),[done,setDone]=useState(false),[payErr,setPayErr]=useState('');
+  const [busy,setBusy]=useState(false),[done,setDone]=useState(false),[payErr,setPayErr]=useState(''),[soon,setSoon]=useState(false);
   const [email,setEmail]=useState(state.auth?.email||'');
   const pay=async()=>{
-    setBusy(true); setPayErr('');
+    setBusy(true); setPayErr(''); setSoon(false);
     try{
       const token=await getAccessToken();
       const res=await fetch('/api/checkout',{method:'POST',headers:{Authorization:`Bearer ${token||''}`}});
+      if(res.status===503){ setSoon(true); setBusy(false); return; }   // Stripe not wired yet (preview)
       const data=await res.json();
-      if(data.url){ window.location.href=data.url; return; }      // → Stripe Checkout
+      if(data.url){ window.location.href=data.url; return; }            // → Stripe Checkout
       if(data.alreadyOwned){ onPaid(); setDone(true); return; }
       setPayErr(data.error||'Could not start checkout.');
     }catch(e){ setPayErr(e?.message||'Could not reach the payment service.'); }
@@ -513,8 +514,9 @@ function Payment({state, onPaid, setRoute}){
             <div><label className={lbl}>Email for receipt</label><input value={email} onChange={e=>setEmail(e.target.value)} className={inp} placeholder="you@email.com"/></div>
             <div className="rounded-xl border border-line bg-white/[.02] p-4 flex items-start gap-3"><span className="text-[18px] mt-0.5" aria-hidden="true">🔒</span><p className="text-[13px] text-mute leading-relaxed">You'll enter your card on Stripe's secure checkout. PM Sim Lab never sees or stores your card number. Test mode accepts <span className="text-white font-medium">4242 4242 4242 4242</span>, any future expiry, any CVC.</p></div>
           </div>
-          <button onClick={pay} disabled={busy} className="btn-gold w-full mt-5 py-3.5 rounded-xl disabled:opacity-60">{busy?'Redirecting to secure checkout…':'Pay $49.00 →'}</button>
+          <button onClick={pay} disabled={busy||soon} className="btn-gold w-full mt-5 py-3.5 rounded-xl disabled:opacity-60">{busy?'Redirecting to secure checkout…':soon?'Certification opening soon':'Pay $49.00 →'}</button>
           {payErr && <p className="mt-3 text-center text-bad text-[12.5px]">{payErr}</p>}
+          {soon && <p className="mt-3 text-center text-[12.5px] text-mute">You're on the early preview — paid certification opens shortly. Everything in the free track is yours to explore now.</p>}
           <div className="mt-3 flex items-center justify-center gap-3 text-[11px] text-mute2"><span>PCI-DSS</span><span>·</span><span>3-D Secure</span><span>·</span><span>256-bit TLS</span></div>
           <p className="mt-2 text-center text-[11px] text-mute2">Card is processed by Stripe — PM Sim Lab never sees your card number.</p>
         </div>
