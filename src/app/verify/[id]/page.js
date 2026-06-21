@@ -52,11 +52,11 @@ export default async function VerifyPage({ params }) {
         <div className="card ring-soft p-10 max-w-lg w-full text-center">
           <div className="w-16 h-16 mx-auto rounded-full grid place-items-center text-2xl" style={{ background: "rgba(74,222,128,.15)", color: "#4ade80" }}>✓</div>
           <div className="mt-4 text-[11px] uppercase tracking-[.3em] text-good">Verified credential</div>
-          <h1 className="display text-3xl mt-3">Certified PM Sim Lab Practitioner</h1>
+          <h1 className="display text-3xl mt-3">Certified in PM Decision-Making</h1>
           <p className="text-mute mt-5 text-[14px]">This certifies that</p>
           <div className="display text-3xl goldtext mt-1">{cert.recipient}</div>
           <p className="text-mute mt-4 text-[14px] max-w-sm mx-auto leading-relaxed">
-            completed the PM Sim Lab program — situational scenarios, chart competencies, and a timed certification exam.
+            demonstrated applied project-management decision-making across PM Sim Lab's situational scenarios, chart competencies, and a timed assessment.
           </p>
           <div className="mt-8 flex items-center justify-center gap-8 text-[12px]">
             <div><div className="text-mute2">Exam score</div><div className="text-white font-semibold text-[15px]">{cert.score ?? "—"}%</div></div>

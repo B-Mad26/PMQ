@@ -257,6 +257,37 @@ function StatNum({stat}){
   useEffect(()=>{ const el=ref.current; if(!el)return; const io=new IntersectionObserver(es=>{ if(es[0].isIntersecting){ setSeen(true); io.disconnect(); } },{threshold:.4}); io.observe(el); return ()=>io.disconnect(); },[]);
   return (<div ref={ref}><div className="display text-3xl gradtext">{stat.static!=null ? stat.static : (seen ? <CountUp target={stat.num} suffix={stat.suffix||''}/> : '0'+(stat.suffix||''))}</div><div className="text-[12px] uppercase tracking-[.18em] text-mute mt-1">{stat.sub}</div></div>);
 }
+function TeamCTA(){
+  const [email,setEmail]=useState(''),[seats,setSeats]=useState('5–25 PMs'),[busy,setBusy]=useState(false),[sent,setSent]=useState(false),[err,setErr]=useState('');
+  const submit=async()=>{
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ setErr('Enter a valid work email.'); return; }
+    setErr(''); setBusy(true);
+    try{
+      const res=await fetch('/api/team-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,seats})});
+      if(res.ok) setSent(true); else { const d=await res.json().catch(()=>({})); setErr(d.error||'Could not submit — please try again.'); }
+    }catch(e){ setErr('Could not submit — please try again.'); }
+    setBusy(false);
+  };
+  return (<section className="py-16 border-t border-line"><div className="card ring-soft p-8 md:p-10 grid md:grid-cols-[1.1fr,.9fr] gap-8 items-center">
+    <div>
+      <Chip tone="brand">◈ For teams &amp; PMOs</Chip>
+      <h2 className="display text-[clamp(1.8rem,3vw,2.6rem)] mt-4 leading-tight">Train your whole PMO to make better calls.</h2>
+      <p className="text-mute text-[15px] mt-3 leading-relaxed">Seats for your team, a manager dashboard of skill-tree mastery, and a shared standard for how your PMs make decisions. Tell us your team size and we'll set you up.</p>
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[13.5px] text-slate-200">{['Per-seat team plans','Manager analytics','Shared leaderboard','Verifiable credentials'].map(x=>(<span key={x} className="flex items-center gap-2"><span className="text-good">✓</span>{x}</span>))}</div>
+    </div>
+    <div className="card p-6">
+      {sent ? (<div className="text-center py-6"><div className="w-12 h-12 mx-auto rounded-full btn-primary grid place-items-center text-xl">✓</div><div className="font-semibold mt-3 text-[15px]">Thanks — we'll be in touch.</div><p className="text-mute text-[13px] mt-1">We'll reach out about team access shortly.</p></div>) : (<>
+        <label className="block text-[12px] text-mute mb-1.5">Work email</label>
+        <input value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submit()} placeholder="you@company.com" className="w-full px-4 py-3 rounded-xl bg-white/[.03] border border-line text-[14px] focus:border-indigo outline-none transition"/>
+        <label className="block text-[12px] text-mute mb-1.5 mt-3">Team size</label>
+        <select value={seats} onChange={e=>setSeats(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-ink border border-line text-[14px] focus:border-indigo outline-none transition">{['1–4 PMs','5–25 PMs','25–100 PMs','100+ PMs'].map(s=>(<option key={s}>{s}</option>))}</select>
+        {err && <p className="text-bad text-[12.5px] mt-3">{err}</p>}
+        <button onClick={submit} disabled={busy} className="btn-primary w-full mt-4 py-3 rounded-xl text-[14px] disabled:opacity-60">{busy?'Sending…':'Request team access →'}</button>
+        <p className="text-center text-[11px] text-mute2 mt-3">No commitment — we'll share plans &amp; pricing.</p>
+      </>)}
+    </div>
+  </div></section>);
+}
 function Home({setRoute}){
   return (
     <div className="max-w-6xl mx-auto px-6">
@@ -298,6 +329,8 @@ function Home({setRoute}){
           <div className="mt-6 grid sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">{[`${SCENARIOS.length} adaptive crisis scenarios`,'Five chart builders + project briefs','Ask-the-AI help on any question','Timed certification exam','Shareable certificate + LinkedIn badge','Light & dark themes','Adaptive difficulty engine','Referral rewards for your team'].map(x=>(<div key={x} className="flex items-center gap-2.5 text-slate-200"><span className="text-good">✓</span>{x}</div>))}</div></div>
         <div className="card ring-soft p-8 flex flex-col justify-center text-center relative overflow-hidden"><div className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-48 bg-gold/15 blur-3xl"/><div className="relative"><Chip tone="gold">◆ Best value in PM training</Chip><div className="display text-6xl goldtext mt-5">$49</div><div className="text-mute text-[13px] mt-1">one-time · vs $200+/yr for video courses</div><button onClick={()=>setRoute('challenge')} className="btn-gold mt-6 w-full py-3.5 rounded-2xl">Start free, certify for $49 →</button><p className="mt-3 text-[12px] text-mute2">Refer a colleague — you both earn rewards.</p></div></div>
       </div></section>
+
+      <TeamCTA/>
 
       <section className="py-20"><div className="card ring-soft relative overflow-hidden p-12 text-center"><div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-indigo/25 to-transparent blur-3xl"/><div className="relative"><h2 className="display text-[clamp(2.2rem,4vw,3.4rem)] leading-tight max-w-2xl mx-auto">Ready to make the calls that matter?</h2><p className="mt-4 text-mute text-[16px]">Start free. Certify for a one-time <span className="text-white font-medium">$49</span> — lifetime access, no subscription.</p><button onClick={()=>setRoute('challenge')} className="btn-primary mt-8 px-9 py-4 rounded-2xl text-[15px]">Begin your first scenario →</button></div></div></section>
     </div>
@@ -620,7 +653,7 @@ function Exam({state, dispatch, setRoute}){
 function Certificate({state, setRoute}){
   const id = state.certId || 'PMQ-2026-'+String(1000+(state.score||0)+state.pmp%900).slice(0,5);
   const verify='https://pmsimlab.com/verify/'+id;
-  const shareText=`I'm now a Certified PM Sim Lab Practitioner — scored ${state.score||90}% on the project management certification exam! ${verify}`;
+  const shareText=`I earned the PM Decision-Making credential from PM Sim Lab — ${state.score||90}% on the decision-making assessment. Verify: ${verify}`;
   const enc=encodeURIComponent, share={
     x:`https://twitter.com/intent/tweet?text=${enc(shareText)}`,
     linkedin:`https://www.linkedin.com/sharing/share-offsite/?url=${enc(verify)}`,
@@ -636,11 +669,11 @@ function Certificate({state, setRoute}){
         <div className="absolute inset-3 rounded-[14px] border border-gold/15 pointer-events-none"/>
         <div className="relative">
           <div className="flex items-center justify-center gap-2 text-gold"><span className="grid place-items-center w-9 h-9 rounded-xl btn-gold text-base">◆</span><span className="font-semibold tracking-tight">PM Sim Lab</span></div>
-          <div className="text-[11px] uppercase tracking-[.35em] text-mute mt-6">Certificate of Completion</div>
-          <h1 className="display text-4xl mt-4">Certified PM Sim Lab Practitioner</h1>
+          <div className="text-[11px] uppercase tracking-[.35em] text-mute mt-6">Skills Credential</div>
+          <h1 className="display text-4xl mt-4">Certified in PM Decision-Making</h1>
           <p className="text-mute mt-5 text-[14px]">This certifies that</p>
           <div className="display text-3xl goldtext mt-2">{state.auth?.name || 'PM Sim Lab Member'}</div>
-          <p className="text-mute mt-4 text-[14px] max-w-md mx-auto">has completed the PM Sim Lab program — {SCENARIOS.length} situational scenarios, five chart competencies, and the timed certification exam — demonstrating applied skill across risk, stakeholders, planning, Agile and budget.</p>
+          <p className="text-mute mt-4 text-[14px] max-w-md mx-auto">has demonstrated applied project-management decision-making across {SCENARIOS.length} situational scenarios, five chart competencies, and a timed assessment — spanning risk, stakeholders, planning, Agile and budget.</p>
           <div className="mt-8 flex items-center justify-center gap-10 text-[12px]"><div><div className="text-mute2">Exam score</div><div className="text-white font-semibold text-[15px]">{state.score||90}%</div></div><div><div className="text-mute2">Date</div><div className="text-white font-semibold text-[15px]">June 10, 2026</div></div><div><div className="text-mute2">Credential ID</div><div className="text-white font-semibold text-[15px]">{id}</div></div></div>
           <div className="mt-8 flex items-center justify-center gap-2 text-[11px] text-mute2"><span>🔒 Verify at {verify.replace('https://','')}</span></div>
         </div>
@@ -673,7 +706,7 @@ function Dashboard({state, setRoute, openGate}){
     <div className="flex items-end justify-between flex-wrap gap-4"><div><Kicker>Your dashboard</Kicker><h1 className="display text-[clamp(2rem,3.6vw,2.8rem)] mt-3">Welcome back, {(state.auth?.name||'there').split(' ')[0]}.</h1><p className="text-mute text-[14px] mt-1">{state.premium?'Senior PM':'Junior PM'} · Level {state.level} · <span className="text-warn">🔥 {state.streak}-day streak</span></p></div><button onClick={()=>setRoute('challenge')} className="btn-primary px-6 py-3.5 rounded-2xl text-[14px]">Continue training →</button></div>
     <div className="mt-8 grid lg:grid-cols-3 gap-5">
       <div className="card card-hover p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Total XP earned</div><div className="display text-5xl gradtext mt-3">{pmp.toLocaleString()}</div><div className="text-[13px] text-mute mt-2">{state.solved.length}/{SCENARIOS.length} scenarios · {state.missions.length}/5 challenges · {state.badges.length} badges</div></div>
-      <div className="card card-hover p-6 flex items-center gap-5"><Ring pct={certPct} label={certPct+'%'} sub="Program"/><div><div className="text-[11px] uppercase tracking-[.2em] text-mute">Certification</div><div className="text-[15px] mt-2 leading-snug text-slate-200">{state.certified?'Certified Practitioner ✓':state.premium?(examReady?'Exam unlocked':'Premium track active'):'Locked — Junior tier'}</div>{!state.premium&&<button onClick={openGate} className="mt-3 goldtext text-[13px] font-medium hover:underline">🔒 Unlock for $49 →</button>}{state.certified?<button onClick={()=>setRoute('cert')} className="mt-3 goldtext text-[13px] font-medium hover:underline">View certificate →</button>:examReady?<button onClick={()=>setRoute('exam')} className="mt-3 text-indigo text-[13px] font-medium hover:underline">Take the exam →</button>:null}</div></div>
+      <div className="card card-hover p-6 flex items-center gap-5"><Ring pct={certPct} label={certPct+'%'} sub="Program"/><div><div className="text-[11px] uppercase tracking-[.2em] text-mute">Certification</div><div className="text-[15px] mt-2 leading-snug text-slate-200">{state.certified?'Decision-Making certified ✓':state.premium?(examReady?'Assessment unlocked':'Premium track active'):'Locked — Junior tier'}</div>{!state.premium&&<button onClick={openGate} className="mt-3 goldtext text-[13px] font-medium hover:underline">🔒 Unlock for $49 →</button>}{state.certified?<button onClick={()=>setRoute('cert')} className="mt-3 goldtext text-[13px] font-medium hover:underline">View certificate →</button>:examReady?<button onClick={()=>setRoute('exam')} className="mt-3 text-indigo text-[13px] font-medium hover:underline">Take the exam →</button>:null}</div></div>
       <div className="card card-hover p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Cohort rank</div><div className="display text-5xl mt-3">#{rank}</div><div className="text-[13px] text-mute mt-2">Climbs as you earn XP</div></div>
     </div>
     <div className="mt-5 grid lg:grid-cols-3 gap-5">
