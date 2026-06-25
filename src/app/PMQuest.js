@@ -653,7 +653,8 @@ function Exam({state, dispatch, setRoute}){
 function Certificate({state, setRoute}){
   const id = state.certId || 'PMQ-2026-'+String(1000+(state.score||0)+state.pmp%900).slice(0,5);
   const verify='https://pmsimlab.com/verify/'+id;
-  const shareText=`I earned the PM Decision-Making credential from PM Sim Lab — ${state.score||90}% on the decision-making assessment. Verify: ${verify}`;
+  const dateStr = (state.certDate ? new Date(state.certDate) : new Date()).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const shareText=`I earned the PM Decision-Making credential from PM Sim Lab — ${state.score ?? 0}% on the decision-making assessment. Verify: ${verify}`;
   const enc=encodeURIComponent, share={
     x:`https://twitter.com/intent/tweet?text=${enc(shareText)}`,
     linkedin:`https://www.linkedin.com/sharing/share-offsite/?url=${enc(verify)}`,
@@ -674,7 +675,7 @@ function Certificate({state, setRoute}){
           <p className="text-mute mt-5 text-[14px]">This certifies that</p>
           <div className="display text-3xl goldtext mt-2">{state.auth?.name || 'PM Sim Lab Member'}</div>
           <p className="text-mute mt-4 text-[14px] max-w-md mx-auto">has demonstrated applied project-management decision-making across {SCENARIOS.length} situational scenarios, five chart competencies, and a timed assessment — spanning risk, stakeholders, planning, Agile and budget.</p>
-          <div className="mt-8 flex items-center justify-center gap-10 text-[12px]"><div><div className="text-mute2">Exam score</div><div className="text-white font-semibold text-[15px]">{state.score||90}%</div></div><div><div className="text-mute2">Date</div><div className="text-white font-semibold text-[15px]">June 10, 2026</div></div><div><div className="text-mute2">Credential ID</div><div className="text-white font-semibold text-[15px]">{id}</div></div></div>
+          <div className="mt-8 flex items-center justify-center gap-10 text-[12px]"><div><div className="text-mute2">Exam score</div><div className="text-white font-semibold text-[15px]">{state.score ?? 0}%</div></div><div><div className="text-mute2">Date</div><div className="text-white font-semibold text-[15px]">{dateStr}</div></div><div><div className="text-mute2">Credential ID</div><div className="text-white font-semibold text-[15px]">{id}</div></div></div>
           <div className="mt-8 flex items-center justify-center gap-2 text-[11px] text-mute2"><span>🔒 Verify at {verify.replace('https://','')}</span></div>
         </div>
       </div>
@@ -813,7 +814,7 @@ export default function App(){
   useEffect(()=>{
     if(userId && state.certified && !certIssuedRef.current){
       certIssuedRef.current=true;
-      issueCertificate(userId, state.auth?.name||'PM Sim Lab Member', state.score).then(cid=>{ if(cid) setState(s=>({...s, certId:cid})); });
+      issueCertificate(userId, state.auth?.name||'PM Sim Lab Member', state.score).then(c=>{ if(c?.id) setState(s=>({...s, certId:c.id, certDate:c.issued_at})); });
     }
   },[userId, state.certified]);
 

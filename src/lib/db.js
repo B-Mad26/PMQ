@@ -109,10 +109,10 @@ export async function issueCertificate(userId, recipient, score) {
     const { data, error } = await supabase
       .from("certificates")
       .insert({ user_id: userId, recipient, score: score ?? null })
-      .select("id")
+      .select("id,issued_at")
       .single();
     if (error) throw error;
-    return data?.id ?? null;
+    return data ?? null;
   } catch (e) {
     console.warn("[db] issueCertificate failed:", e?.message || e);
     return null;
