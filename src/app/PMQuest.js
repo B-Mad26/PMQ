@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { signIn, signUp, signOut, getSession, getAccessToken, onAuthChange } from "@/lib/auth";
+import { signIn, signUp, signOut, getSession, getAccessToken, onAuthChange, resetPassword, updatePassword } from "@/lib/auth";
 import { loadRemoteState, saveProfile, recordSolved, issueCertificate } from "@/lib/db";
 
 const DOMAINS = [
@@ -218,8 +217,9 @@ function fmtTime(t){ return String(Math.floor(t/60)).padStart(2,'0')+':'+String(
 /* ============================== NAV ============================== */
 function Nav({route, setRoute, state, theme, setTheme, onLogout}){
   const tabs=[['home','Home'],['challenge','Challenge'],['charts','Charts Lab'],['exam','Exam'],['dashboard','Dashboard']];
-  const [scrolled,setScrolled]=useState(false);
+  const [scrolled,setScrolled]=useState(false); const [menuOpen,setMenuOpen]=useState(false);
   useEffect(()=>{ const f=()=>setScrolled(window.scrollY>10); window.addEventListener('scroll',f); return ()=>window.removeEventListener('scroll',f); },[]);
+  useEffect(()=>{ setMenuOpen(false); },[route]);
   const pmp=useCountUp(state.pmp);
   return (
     <div className={`sticky top-0 z-40 transition-all duration-300 ${scrolled?'bg-ink/80 backdrop-blur-xl border-b border-line':'border-b border-transparent'}`}>
@@ -227,6 +227,7 @@ function Nav({route, setRoute, state, theme, setTheme, onLogout}){
         <button onClick={()=>setRoute('home')} className="flex items-center gap-2.5"><span className="grid place-items-center w-9 h-9 rounded-xl btn-primary text-base">◆</span><span className="font-semibold text-[17px] tracking-tight">PM <span className="gradtext">Sim Lab</span></span></button>
         <nav className="hidden md:flex items-center gap-1 ml-2 p-1 rounded-full border border-line bg-white/[.02]">{tabs.map(([k,l])=>(<button key={k} onClick={()=>setRoute(k)} className={`px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all ${route===k?'bg-white/10 text-white shadow-sm':'text-mute hover:text-white'}`}>{l}</button>))}</nav>
         <div className="ml-auto flex items-center gap-3 text-sm">
+          <button onClick={()=>setMenuOpen(o=>!o)} aria-label="Menu" aria-expanded={menuOpen} className="md:hidden grid place-items-center w-9 h-9 rounded-full border border-line bg-white/[.02] hover:bg-white/[.06] transition text-[15px]"><span aria-hidden="true">{menuOpen?'✕':'☰'}</span></button>
           <button onClick={()=>setTheme(theme==='light'?'dark':'light')} title="Toggle theme" aria-label={theme==='light'?'Switch to dark mode':'Switch to light mode'} className="grid place-items-center w-9 h-9 rounded-full border border-line bg-white/[.02] hover:bg-white/[.06] transition text-[15px]"><span aria-hidden="true">{theme==='light'?'🌙':'☀️'}</span></button>
           {state.auth ? (<>
             <span className="hidden sm:inline-flex items-center gap-1.5 text-warn text-[13px]">🔥 {state.streak}</span>
@@ -241,6 +242,10 @@ function Nav({route, setRoute, state, theme, setTheme, onLogout}){
           )}
         </div>
       </div>
+      {menuOpen && (<nav className="md:hidden border-t border-line bg-ink/95 backdrop-blur-xl px-6 py-3 flex flex-col gap-1">
+        {tabs.map(([k,l])=>(<button key={k} onClick={()=>{setRoute(k);setMenuOpen(false);}} className={`text-left px-3 py-2.5 rounded-xl text-[15px] font-medium ${route===k?'bg-white/10 text-white':'text-mute hover:text-white'}`}>{l}</button>))}
+        {state.auth && <button onClick={()=>{onLogout();setMenuOpen(false);}} className="text-left px-3 py-2.5 rounded-xl text-[15px] text-mute hover:text-white">Sign out</button>}
+      </nav>)}
     </div>
   );
 }
@@ -248,7 +253,7 @@ function Nav({route, setRoute, state, theme, setTheme, onLogout}){
 /* ============================== HOME ============================== */
 const HOW_IT_WORKS=[
   ['①','Face a real scenario',`A messy, realistic PM situation with shuffled options and distractor detail — you make the call under a timer.`],
-  ['②','Get instant AI coaching',`Coach Mira breaks down the outcome, the why, and the better move — the moment you answer.`],
+  ['②','Get instant coaching',`Coach Mira breaks down the outcome, the why, and the better move — the moment you answer.`],
   ['③','Earn your certificate',`Clear the free track, pass the timed exam, and get a shareable credential with a verifiable ID.`],
 ];
 function CountUp({target, suffix=''}){ const v=useCountUp(target,1100); return <>{v}{suffix}</>; }
@@ -295,7 +300,7 @@ function Home({setRoute}){
         <div>
           <div className="animate-rise" style={{animationDelay:'0s'}}><Chip tone="gold">◆ 25 scenarios · 5 chart builders · 1 certification</Chip></div>
           <h1 className="display mt-6 text-[clamp(2.6rem,5.4vw,4.4rem)] leading-[1.02] font-medium animate-rise" style={{animationDelay:'.08s'}}>Master project management by <span className="gradtext italic">doing</span>, not watching.</h1>
-          <p className="mt-6 text-[17px] leading-relaxed text-mute max-w-xl animate-rise" style={{animationDelay:'.18s'}}>{SCENARIOS.length} realistic crisis scenarios, five hands-on chart builders with project briefs, and a timed certification exam. 60–90 minutes of decisions that mirror the real job — with AI coaching in seconds.</p>
+          <p className="mt-6 text-[17px] leading-relaxed text-mute max-w-xl animate-rise" style={{animationDelay:'.18s'}}>{SCENARIOS.length} realistic crisis scenarios, five hands-on chart builders with project briefs, and a timed certification exam. 60–90 minutes of decisions that mirror the real job — with instant coaching on every call.</p>
           <div className="mt-9 flex flex-wrap gap-3.5 animate-rise" style={{animationDelay:'.28s'}}><button onClick={()=>setRoute('challenge')} className="btn-primary px-7 py-3.5 rounded-2xl text-[15px]">Start free diagnostic →</button><button onClick={()=>setRoute('charts')} className="btn-ghost px-7 py-3.5 rounded-2xl text-[15px] font-medium">Open the Charts Lab</button></div>
           <div className="mt-8 flex items-center gap-6 text-[13px] text-mute animate-rise" style={{animationDelay:'.36s'}}><span className="flex items-center gap-2"><span className="text-good">✓</span> Free to start — no card required</span><span className="h-4 w-px bg-line"/><span>Free through Junior PM · <span className="text-white font-medium">$49</span> to certify</span></div>
         </div>
@@ -313,7 +318,7 @@ function Home({setRoute}){
       <section className="py-8 border-y border-line"><div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">{[{num:SCENARIOS.length,sub:'crisis scenarios'},{num:5,sub:'chart builders'},{static:'60–90 min',sub:'of gameplay'},{static:'70%',sub:'to certify'}].map((s,i)=>(<StatNum key={i} stat={s}/>))}</div></section>
 
       <section className="py-20"><Kicker>Why PM Sim Lab is different</Kicker><h2 className="display text-[clamp(2rem,3.6vw,3rem)] mt-4 max-w-2xl leading-tight">Not another video course. You make decisions and build the artifacts.</h2>
-        <div className="mt-12 grid md:grid-cols-3 gap-5">{[['◆','Real situations, not trivia',`${SCENARIOS.length} scenarios modelled on the messes PMs actually face — with shuffled answers and distractor detail, just like the real exam.`],['▦','Hands-on Charts Lab','Five interactive builders, each with a realistic project brief: build a Gantt, recover a project via EVM, clean up a RACI, finish a burndown. Earn XP for hitting each target.'],['✦','Adaptive AI coach + certification','Ask the AI when you\'re stuck, get instant Outcome → Why → Better-move feedback, then a timed exam that issues a shareable certificate.']].map((c,i)=>(<div key={i} className="card card-hover p-6"><div className="text-2xl gradtext">{c[0]}</div><div className="mt-3 text-[17px] font-semibold">{c[1]}</div><div className="text-[14px] text-mute mt-2 leading-relaxed">{c[2]}</div></div>))}</div>
+        <div className="mt-12 grid md:grid-cols-3 gap-5">{[['◆','Real situations, not trivia',`${SCENARIOS.length} scenarios modelled on the messes PMs actually face — with shuffled answers and distractor detail, just like the real exam.`],['▦','Hands-on Charts Lab','Five interactive builders, each with a realistic project brief: build a Gantt, recover a project via EVM, clean up a RACI, finish a burndown. Earn XP for hitting each target.'],['✦','Built-in coach + certification','Ask the built-in coach when you\'re stuck, get instant Outcome → Why → Better-move feedback, then a timed exam that issues a shareable certificate.']].map((c,i)=>(<div key={i} className="card card-hover p-6"><div className="text-2xl gradtext">{c[0]}</div><div className="mt-3 text-[17px] font-semibold">{c[1]}</div><div className="text-[14px] text-mute mt-2 leading-relaxed">{c[2]}</div></div>))}</div>
       </section>
 
       <section className="py-16 border-t border-line"><div className="flex items-end justify-between flex-wrap gap-4"><div><Kicker>The Charts Lab</Kicker><h2 className="display text-[clamp(2rem,3.6vw,3rem)] mt-4 leading-tight">The five charts every<br/>PM must build.</h2></div><button onClick={()=>setRoute('charts')} className="btn-ghost px-6 py-3 rounded-2xl text-[14px] font-medium">Try the builders →</button></div>
@@ -326,7 +331,7 @@ function Home({setRoute}){
 
       <section className="py-16 border-t border-line"><div className="grid lg:grid-cols-[1fr,.8fr] gap-6 items-stretch">
         <div className="card p-8"><Kicker>What you get for $49</Kicker><h2 className="display text-3xl mt-4">A full certification path — one price, lifetime access.</h2>
-          <div className="mt-6 grid sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">{[`${SCENARIOS.length} adaptive crisis scenarios`,'Five chart builders + project briefs','Ask-the-AI help on any question','Timed certification exam','Shareable certificate + LinkedIn badge','Light & dark themes','Adaptive difficulty engine','Referral rewards for your team'].map(x=>(<div key={x} className="flex items-center gap-2.5 text-slate-200"><span className="text-good">✓</span>{x}</div>))}</div></div>
+          <div className="mt-6 grid sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">{[`${SCENARIOS.length} adaptive crisis scenarios`,'Five chart builders + project briefs','Ask-the-coach help on any question','Timed certification exam','Shareable certificate + LinkedIn badge','Light & dark themes','Adaptive difficulty engine','Referral rewards for your team'].map(x=>(<div key={x} className="flex items-center gap-2.5 text-slate-200"><span className="text-good">✓</span>{x}</div>))}</div></div>
         <div className="card ring-soft p-8 flex flex-col justify-center text-center relative overflow-hidden"><div className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-48 bg-gold/15 blur-3xl"/><div className="relative"><Chip tone="gold">◆ Best value in PM training</Chip><div className="display text-6xl goldtext mt-5">$49</div><div className="text-mute text-[13px] mt-1">one-time · vs $200+/yr for video courses</div><button onClick={()=>setRoute('challenge')} className="btn-gold mt-6 w-full py-3.5 rounded-2xl">Start free, certify for $49 →</button><p className="mt-3 text-[12px] text-mute2">Refer a colleague — you both earn rewards.</p></div></div>
       </div></section>
 
@@ -353,7 +358,7 @@ function GanttBuilder({done, onWin}){
     <Brief code="ATLAS — CRM migration"><b className="text-white">Acme is replacing its CRM in 6 weeks.</b> Work packages: Discovery (5d) → Design (6d) → Front-end build (8d) → QA &amp; launch (4d), with Content (6d) running in parallel after Discovery. The sponsor needs go-live by <b className="text-white">day 18</b>. You have one extra developer to crash a single task. Build the schedule and pull the finish in.</Brief>
     <Mission done={won} target="Hit the deadline: shorten durations or re-sequence so the project finishes on or before day 18." reward={120}/>
     <p className="text-[14px] text-mute leading-relaxed">A <b className="text-white">Gantt chart</b> exposes the <b className="text-white">critical path</b> — the longest dependent chain that sets the finish date. Crashing a task off it won't pull your date in.</p>
-    <div className="mt-5 card p-4 overflow-x-auto"><svg width={W} height={tasks.length*rowH+28} className="min-w-[560px]">
+    <div className="mt-5 card p-4 overflow-x-auto"><svg width={W} height={tasks.length*rowH+28} className="min-w-[560px]" role="img" aria-label={`Gantt chart: project finishes on day ${sched.end}; critical-path tasks are highlighted`}>
       {Array.from({length:maxDay+1}).map((_,d)=> d%4===0 && (<g key={d}><line x1={padL+d*colW} y1="18" x2={padL+d*colW} y2={tasks.length*rowH+18} stroke="rgba(130,130,150,.18)"/><text x={padL+d*colW} y="12" fill="#8b93a8" fontSize="9" textAnchor="middle">d{d}</text></g>))}
       <line x1={padL+sched.end*colW} y1="14" x2={padL+sched.end*colW} y2={tasks.length*rowH+18} stroke="#fb7185" strokeDasharray="3 3" opacity=".7"/>
       {tasks.map((t,i)=>{ const y=18+i*rowH, fin=sched.eft[t.id], st=fin-t.dur, isC=sched.crit.has(t.id); return (<g key={t.id}><text x="0" y={y+rowH/2+3} fill="currentColor" fontSize="11" className="text-slate-300">{t.name.slice(0,18)}</text><rect x={padL+st*colW} y={y+6} width={Math.max(2,t.dur*colW)} height={rowH-14} rx="5" fill={isC?'url(#gC)':'url(#gN)'} stroke={isC?'#fb7185':'rgba(130,130,150,.3)'}/><text x={padL+st*colW+6} y={y+rowH/2+3} fill="#06080f" fontSize="10" fontWeight="600">{t.dur}d</text></g>); })}
@@ -395,7 +400,7 @@ function EVMBuilder({done, onWin}){
     <Brief code="ORION — platform build"><b className="text-white">A $500k, 20-week platform is at the mid-point.</b> The board wants a status read. Current data: 44% of the plan should be done (PV), only 36% is actually earned (EV), and $230k has been spent (AC). Diagnose the health — then model a recovery that brings both CPI and SPI back to 1.0.</Brief>
     <Mission done={won} target="Recover the project: adjust the inputs until both CPI ≥ 1.0 (on budget) and SPI ≥ 1.0 (on schedule)." reward={140}/>
     <p className="text-[14px] text-mute leading-relaxed"><b className="text-white">EVM</b> turns "feels behind" into numbers. <b className="text-white">CPI = EV/AC</b>, <b className="text-white">SPI = EV/PV</b>. Under 1.0 is trouble. <b className="text-white">EAC = BAC/CPI</b> forecasts the true final cost.</p>
-    <div className="mt-5 card p-4"><svg width={W} height={H} className="w-full"><line x1={pl} y1={H-pb} x2={W-10} y2={H-pb} stroke="rgba(130,130,150,.25)"/><line x1={pl} y1="12" x2={pl} y2={H-pb} stroke="rgba(130,130,150,.25)"/><path d={svgLine(pvPts)} stroke="#8b93a8" strokeWidth="2" fill="none" strokeDasharray="5 4"/><path d={svgLine(acPts)} stroke="#fb7185" strokeWidth="2.5" fill="none"/><path d={svgLine(evPts)} stroke="#4ade80" strokeWidth="2.5" fill="none"/><circle cx={x(now)} cy={y(EV)} r="4" fill="#4ade80"/><circle cx={x(now)} cy={y(AC)} r="4" fill="#fb7185"/><text x={W-12} y={y(bac)-4} fill="#8b93a8" fontSize="9" textAnchor="end">PV (plan)</text></svg><div className="flex gap-4 text-[11px] text-mute mt-1"><span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-good"/>EV earned</span><span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-bad"/>AC actual</span><span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-mute"/>PV planned</span></div></div>
+    <div className="mt-5 card p-4"><svg width={W} height={H} className="w-full" role="img" aria-label={`Earned-value chart: SPI ${SPI.toFixed(2)}, CPI ${CPI.toFixed(2)}, forecast cost $${Math.round(EAC)}k`}><line x1={pl} y1={H-pb} x2={W-10} y2={H-pb} stroke="rgba(130,130,150,.25)"/><line x1={pl} y1="12" x2={pl} y2={H-pb} stroke="rgba(130,130,150,.25)"/><path d={svgLine(pvPts)} stroke="#8b93a8" strokeWidth="2" fill="none" strokeDasharray="5 4"/><path d={svgLine(acPts)} stroke="#fb7185" strokeWidth="2.5" fill="none"/><path d={svgLine(evPts)} stroke="#4ade80" strokeWidth="2.5" fill="none"/><circle cx={x(now)} cy={y(EV)} r="4" fill="#4ade80"/><circle cx={x(now)} cy={y(AC)} r="4" fill="#fb7185"/><text x={W-12} y={y(bac)-4} fill="#8b93a8" fontSize="9" textAnchor="end">PV (plan)</text></svg><div className="flex gap-4 text-[11px] text-mute mt-1"><span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-good"/>EV earned</span><span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-bad"/>AC actual</span><span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-mute"/>PV planned</span></div></div>
     <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5">{stat('SPI',SPI.toFixed(2),SPI>=1)}{stat('CPI',CPI.toFixed(2),CPI>=1)}{stat('EAC','$'+Math.round(EAC)+'k',EAC<=bac)}{stat('VAC','$'+Math.round(VAC)+'k',VAC>=0)}</div>
     <div className={`mt-3 rounded-xl border p-3 text-[13px] ${CPI>=1&&SPI>=1?'border-good/40 bg-good/[.06] text-good':'border-bad/40 bg-bad/[.06] text-bad'}`}>{CPI>=1&&SPI>=1?'On or ahead of cost and schedule — healthy.':`${SPI<1?'Behind schedule':'On schedule'} and ${CPI<1?'over budget':'on budget'}. Forecast final cost ≈ $${Math.round(EAC)}k vs $${bac}k baseline.`}</div>
     <div className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-[12px]">{[['Budget (BAC) $k',bac,setBac,100,1000],['Planned % complete',plan,setPlan,0,100],['Earned % complete (EV)',ev,setEv,0,100],['Actual cost (AC) $k',ac,setAc,0,1000]].map(([l,v,set,mn,mx])=>(<label key={l} className="flex items-center gap-2 text-mute"><span className="w-40">{l}</span><input type="range" min={mn} max={mx} value={v} onChange={e=>set(+e.target.value)} className="flex-1"/><span className="text-white w-12 text-right tabular-nums">{v}</span></label>))}</div>
@@ -412,7 +417,7 @@ function BurndownBuilder({done, onWin}){
     <Brief code="NOVA — 2-week sprint"><b className="text-white">Your team committed to 40 story points across a 10-day sprint.</b> Track the remaining work each day against the ideal pace and steer the team to land the sprint at zero by day 10.</Brief>
     <Mission done={won} target="Finish the sprint: drag day 10's remaining work down to 0 so the burndown reaches the baseline." reward={100}/>
     <p className="text-[14px] text-mute leading-relaxed">A <b className="text-white">burndown chart</b> tracks remaining work against the ideal pace. <b className="text-white">Above</b> the line = behind; <b className="text-white">below</b> = ahead.</p>
-    <div className="mt-5 card p-4"><svg width={W} height={H} className="w-full"><line x1={pl} y1={H-pb} x2={W-10} y2={H-pb} stroke="rgba(130,130,150,.25)"/><line x1={pl} y1="12" x2={pl} y2={H-pb} stroke="rgba(130,130,150,.25)"/><path d={svgLine(ideal)} stroke="#8b93a8" strokeWidth="2" strokeDasharray="5 4" fill="none"/><path d={svgLine(act)} stroke="url(#bd)" strokeWidth="2.5" fill="none"/>{act.map((p,d)=>(<circle key={d} cx={p[0]} cy={p[1]} r="3.5" fill="#5ec5ff"/>))}<defs><linearGradient id="bd" x1="0" x2="1"><stop offset="0" stopColor="#8b7cf0"/><stop offset="1" stopColor="#5ec5ff"/></linearGradient></defs>{Array.from({length:days}).map((_,d)=>(<text key={d} x={x(d)} y={H-8} fill="#8b93a8" fontSize="9" textAnchor="middle">{d+1}</text>))}</svg></div>
+    <div className="mt-5 card p-4"><svg width={W} height={H} className="w-full" role="img" aria-label={`Burndown chart: ${actual[days-1]} of ${total} story points remaining at day ${days}`}><line x1={pl} y1={H-pb} x2={W-10} y2={H-pb} stroke="rgba(130,130,150,.25)"/><line x1={pl} y1="12" x2={pl} y2={H-pb} stroke="rgba(130,130,150,.25)"/><path d={svgLine(ideal)} stroke="#8b93a8" strokeWidth="2" strokeDasharray="5 4" fill="none"/><path d={svgLine(act)} stroke="url(#bd)" strokeWidth="2.5" fill="none"/>{act.map((p,d)=>(<circle key={d} cx={p[0]} cy={p[1]} r="3.5" fill="#5ec5ff"/>))}<defs><linearGradient id="bd" x1="0" x2="1"><stop offset="0" stopColor="#8b7cf0"/><stop offset="1" stopColor="#5ec5ff"/></linearGradient></defs>{Array.from({length:days}).map((_,d)=>(<text key={d} x={x(d)} y={H-8} fill="#8b93a8" fontSize="9" textAnchor="middle">{d+1}</text>))}</svg></div>
     <div className="mt-3 grid grid-cols-5 sm:grid-cols-10 gap-1.5">{actual.map((v,d)=>(<label key={d} className="flex flex-col items-center gap-1 text-[10px] text-mute2"><input type="range" min="0" max={total} value={v} onChange={e=>set(d,+e.target.value)} className="w-full" style={{writingMode:'vertical-lr',direction:'rtl',height:54}}/>d{d+1}</label>))}</div>
   </div>);
 }
@@ -475,12 +480,12 @@ function Login({onLogin, setRoute}){
     } catch(e){ setErr(e?.message||'Something went wrong.'); }
     finally{ setBusy(false); }
   };
-  const provMap={ google:'google', microsoft:'azure', linkedin:'linkedin_oidc' };
-  const social=async(p)=>{
-    setErr(''); setNotice('');
-    if(!isSupabaseConfigured){ setErr('Authentication is not configured yet.'); return; }
-    const { error }=await supabase.auth.signInWithOAuth({ provider:provMap[p]||p, options:{ redirectTo: typeof window!=='undefined'?window.location.origin:undefined } });
-    if(error) setErr(`${cap(p)} sign-in isn't enabled for this project yet — use email below.`);
+  const resetPw=async()=>{
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ setErr('Enter your email above first, then tap reset.'); return; }
+    setErr(''); setNotice(''); setBusy(true);
+    const { error }=await resetPassword(email.trim());
+    setBusy(false);
+    if(error) setErr(error.message); else setNotice('Password reset link sent — check your email.');
   };
   return (
     <div className="max-w-md mx-auto px-6 py-16">
@@ -489,16 +494,14 @@ function Login({onLogin, setRoute}){
         <div className="flex items-center gap-2.5"><span className="grid place-items-center w-9 h-9 rounded-xl btn-primary text-base">◆</span><span className="font-semibold text-[17px]">PM <span className="gradtext">Sim Lab</span></span></div>
         <h1 className="display text-3xl mt-5">{mode==='signin'?'Welcome back':'Create your account'}</h1>
         <p className="text-mute text-[14px] mt-1.5">{mode==='signin'?'Sign in to continue your certification journey.':'Start free — no card required to begin.'}</p>
-        <div className="mt-6 grid grid-cols-3 gap-2">{[['google','G'],['microsoft','⊞'],['linkedin','in']].map(([p,sym])=>(<button key={p} onClick={()=>social(p)} className="btn-ghost py-2.5 rounded-xl text-[13px] font-medium flex items-center justify-center gap-1.5"><span className="text-mute">{sym}</span><span className="capitalize">{p}</span></button>))}</div>
-        <div className="flex items-center gap-3 my-5 text-[11px] text-mute2"><span className="flex-1 h-px bg-line"/>or with email<span className="flex-1 h-px bg-line"/></div>
-        <div className="space-y-3">
+        <div className="space-y-3 mt-6">
           {mode==='signup' && <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" className={inp}/>}
           <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address" className={inp}/>
           <div className="relative"><input type={show?'text':'password'} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submit()} placeholder="Password" className={inp+' pr-16'}/><button onClick={()=>setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-mute hover:text-white">{show?'hide':'show'}</button></div>
         </div>
         {err && <p className="text-bad text-[12.5px] mt-3">{err}</p>}
         {notice && <p className="text-good text-[12.5px] mt-3">{notice}</p>}
-        {mode==='signin' && <div className="text-right mt-2"><button className="text-[12px] text-mute hover:text-white">Forgot password?</button></div>}
+        {mode==='signin' && <div className="text-right mt-2"><button onClick={resetPw} disabled={busy} className="text-[12px] text-mute hover:text-white disabled:opacity-50">Forgot password?</button></div>}
         <button onClick={submit} disabled={busy} className="btn-primary w-full mt-4 py-3 rounded-xl text-[15px] disabled:opacity-60">{busy?'Please wait…':(mode==='signin'?'Sign in →':'Create account →')}</button>
         <p className="text-center text-[13px] text-mute mt-5">{mode==='signin'?"New to PM Sim Lab? ":"Already have an account? "}<button onClick={()=>{setMode(mode==='signin'?'signup':'signin');setErr('');}} className="text-indigo font-medium hover:underline">{mode==='signin'?'Create an account':'Sign in'}</button></p>
         <p className="text-center text-[11px] text-mute2 mt-4">🔒 Secured by Supabase Auth — passwords are hashed, never stored in plaintext.</p>
@@ -545,7 +548,7 @@ function Payment({state, onPaid, setRoute}){
           <div className="flex items-center justify-between"><Kicker>Payment details</Kicker><span className="text-[11px] text-mute flex items-center gap-1.5">🔒 Secured by Stripe</span></div>
           <div className="mt-5 space-y-3">
             <div><label className={lbl}>Email for receipt</label><input value={email} onChange={e=>setEmail(e.target.value)} className={inp} placeholder="you@email.com"/></div>
-            <div className="rounded-xl border border-line bg-white/[.02] p-4 flex items-start gap-3"><span className="text-[18px] mt-0.5" aria-hidden="true">🔒</span><p className="text-[13px] text-mute leading-relaxed">You'll enter your card on Stripe's secure checkout. PM Sim Lab never sees or stores your card number. Test mode accepts <span className="text-white font-medium">4242 4242 4242 4242</span>, any future expiry, any CVC.</p></div>
+            <div className="rounded-xl border border-line bg-white/[.02] p-4 flex items-start gap-3"><span className="text-[18px] mt-0.5" aria-hidden="true">🔒</span><p className="text-[13px] text-mute leading-relaxed">You'll enter your card on Stripe's secure checkout. PM Sim Lab never sees or stores your card number.</p></div>
           </div>
           <button onClick={pay} disabled={busy||soon} className="btn-gold w-full mt-5 py-3.5 rounded-xl disabled:opacity-60">{busy?'Redirecting to secure checkout…':soon?'Certification opening soon':'Pay $49.00 →'}</button>
           {payErr && <p className="mt-3 text-center text-bad text-[12.5px]">{payErr}</p>}
@@ -588,7 +591,7 @@ function Challenge({state, dispatch, setRoute, openChart}){
   const [award,setAward]=useState(null);
   const timer=useRef(null);
   useEffect(()=>{ setChosen(null);setSubmitted(false);setUsedHint(false);setShowHint(false);setTries(0);setTime(150);setAward(null); },[sc.id]);
-  useEffect(()=>{ if(submitted)return; timer.current=setInterval(()=>setTime(t=>clamp(t-1,0,999)),1000); return ()=>clearInterval(timer.current); },[submitted, sc.id]);
+  useEffect(()=>{ if(submitted)return; timer.current=setInterval(()=>setTime(t=>{ if(t<=1){ clearInterval(timer.current); setSubmitted(true); return 0; } return t-1; }),1000); return ()=>clearInterval(timer.current); },[submitted, sc.id]);
   const health = sc.difficulty>=4 ? clamp(100 - tries*22,0,100) : 100;
   const solvedAccessible = accessible.filter(s=>state.solved.includes(s.id)).length;
   const submit=()=>{ if(chosen==null)return; if(!opts[chosen].correct){ setTries(t=>t+1); setSubmitted(true); return; } clearInterval(timer.current); const pts=scoreFor(sc.difficulty, tries===0, usedHint, time>90); setSubmitted(true); setAward({pts,badge:sc.badge}); dispatch({type:'solve', scenario:sc, pts, badge:sc.badge}); };
@@ -612,7 +615,7 @@ function Challenge({state, dispatch, setRoute, openChart}){
         </div>)}
       </div>
       <div className="card ring-soft p-6 h-fit lg:sticky lg:top-24">
-        <div className="flex items-center gap-3.5"><div className="relative"><div className="w-12 h-12 rounded-2xl btn-primary grid place-items-center text-xl">✦</div><span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-good border-2 border-ink animate-glow"/></div><div><div className="font-semibold text-[15px]">{MENTOR}</div><div className="text-[12px] text-mute">Your AI mentor · online</div></div></div>
+        <div className="flex items-center gap-3.5"><div className="relative"><div className="w-12 h-12 rounded-2xl btn-primary grid place-items-center text-xl">✦</div><span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-good border-2 border-ink animate-glow"/></div><div><div className="font-semibold text-[15px]">{MENTOR}</div><div className="text-[12px] text-mute">Your PM coach · online</div></div></div>
         <p className="mt-5 text-[14px] text-slate-200 bg-white/[.03] border border-line rounded-2xl p-4 leading-relaxed">"{sc.coach}"</p>
         {!submitted && (showHint?<p className="mt-3 text-[13.5px] text-warn bg-warn/[.07] border border-warn/25 rounded-2xl p-4 animate-rise leading-relaxed">💡 Identify what's relevant vs noise, then pick the option that protects the project's core objective — not the easiest or loudest one.</p>:<button onClick={()=>{setShowHint(true);setUsedHint(true);}} className="btn-ghost mt-3 w-full text-[13.5px] py-2.5 rounded-xl">💡 Reveal hint <span className="text-mute2">(−10 XP)</span></button>)}
         <AskMira sc={sc}/>
@@ -627,7 +630,8 @@ function Challenge({state, dispatch, setRoute, openChart}){
 
 /* ============================== EXAM ============================== */
 function Exam({state, dispatch, setRoute}){
-  const qs = useMemo(()=> EXAM_IDS.map(id=>{ const s=SCENARIOS.find(x=>x.id===id); return {...s, options:shuffle(s.options)}; }), []);
+  const [retakeKey,setRetakeKey]=useState(0);
+  const qs = useMemo(()=> shuffle(EXAM_IDS).map(id=>{ const s=SCENARIOS.find(x=>x.id===id); return {...s, options:shuffle(s.options)}; }), [retakeKey]);
   const [started,setStarted]=useState(false);
   const [idx,setIdx]=useState(0),[chosen,setChosen]=useState(null),[answers,setAnswers]=useState([]),[time,setTime]=useState(720),[finished,setFinished]=useState(false);
   const timer=useRef(null);
@@ -637,7 +641,7 @@ function Exam({state, dispatch, setRoute}){
   const submit=()=>{ if(chosen==null)return; const ok=qs[idx].options[chosen].correct; const ans=[...answers,ok]; setAnswers(ans); setChosen(null); if(idx+1<qs.length) setIdx(idx+1); else finish(ans); };
   if(!started){ return (<div className="max-w-3xl mx-auto px-6 py-16"><div className="card ring-soft p-10 text-center"><Chip tone="gold">◆ Final assessment</Chip><h1 className="display text-4xl mt-5">Certification Exam</h1><p className="text-mute mt-3 max-w-md mx-auto">{qs.length} situational questions spanning all five domains, with answers shuffled. 12-minute limit. No hints. Score 70%+ to earn your shareable certificate.</p><div className="mt-6 flex justify-center gap-6 text-[13px] text-mute"><span>📋 {qs.length} questions</span><span>⏱ 12:00</span><span>🎯 70% to pass</span></div><button onClick={()=>setStarted(true)} className="btn-gold mt-8 px-8 py-3.5 rounded-2xl">Begin exam →</button></div></div>); }
   if(finished){ const correct=answers.filter(Boolean).length; const pct=Math.round(correct/qs.length*100); const passed=pct>=70;
-    return (<div className="max-w-2xl mx-auto px-6 py-16 text-center"><div className="card ring-soft p-10"><Ring pct={pct} size={150} label={pct+'%'} sub={passed?'Passed':'Score'}/><h1 className="display text-4xl mt-5">{passed?'You passed! 🎉':'Not quite this time'}</h1><p className="text-mute mt-3">{correct}/{qs.length} correct. {passed?'Your certificate is ready.':'You need 70%. Review the scenarios and retake — your progress is saved.'}</p><div className="mt-7 flex gap-3 justify-center">{passed?<button onClick={()=>setRoute('cert')} className="btn-gold px-7 py-3.5 rounded-2xl">View certificate →</button>:<button onClick={()=>{setStarted(false);setFinished(false);setIdx(0);setAnswers([]);setTime(720);}} className="btn-primary px-7 py-3.5 rounded-2xl">Retake exam</button>}<button onClick={()=>setRoute('challenge')} className="btn-ghost px-7 py-3.5 rounded-2xl">Practise more</button></div></div></div>); }
+    return (<div className="max-w-2xl mx-auto px-6 py-16 text-center"><div className="card ring-soft p-10"><Ring pct={pct} size={150} label={pct+'%'} sub={passed?'Passed':'Score'}/><h1 className="display text-4xl mt-5">{passed?'You passed! 🎉':'Not quite this time'}</h1><p className="text-mute mt-3">{correct}/{qs.length} correct. {passed?'Your certificate is ready.':'You need 70%. Review the scenarios and retake — your progress is saved.'}</p><div className="mt-7 flex gap-3 justify-center">{passed?<button onClick={()=>setRoute('cert')} className="btn-gold px-7 py-3.5 rounded-2xl">View certificate →</button>:<button onClick={()=>{setRetakeKey(k=>k+1);setStarted(false);setFinished(false);setIdx(0);setAnswers([]);setChosen(null);setTime(720);}} className="btn-primary px-7 py-3.5 rounded-2xl">Retake exam</button>}<button onClick={()=>setRoute('challenge')} className="btn-ghost px-7 py-3.5 rounded-2xl">Practise more</button></div></div></div>); }
   const q=qs[idx]; const dom=DOMAINS.find(d=>d.key===q.domain);
   return (<div className="max-w-3xl mx-auto px-6 py-8">
     <div className="flex items-center gap-3 mb-5"><Chip tone="brand">{dom.icon} {dom.label}</Chip><span className="text-[13px] text-mute">Question {idx+1} / {qs.length}</span><span className={`ml-auto font-mono text-[14px] tabular-nums ${time<60?'text-bad':'text-mute'}`}>⏱ {fmtTime(time)}</span></div>
@@ -652,7 +656,7 @@ function Exam({state, dispatch, setRoute}){
 /* ============================== CERTIFICATE ============================== */
 function Certificate({state, setRoute}){
   const id = state.certId || 'PMQ-2026-'+String(1000+(state.score||0)+state.pmp%900).slice(0,5);
-  const verify='https://pmsimlab.com/verify/'+id;
+  const verify=(typeof window!=='undefined'?window.location.origin:'')+'/verify/'+id;
   const dateStr = (state.certDate ? new Date(state.certDate) : new Date()).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   const shareText=`I earned the PM Decision-Making credential from PM Sim Lab — ${state.score ?? 0}% on the decision-making assessment. Verify: ${verify}`;
   const enc=encodeURIComponent, share={
@@ -712,7 +716,7 @@ function Dashboard({state, setRoute, openGate}){
     </div>
     <div className="mt-5 grid lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 card p-6"><div className="flex items-center justify-between"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Skill tree · mastery</div><Chip>5 disciplines</Chip></div><div className="mt-6 space-y-4">{DOMAINS.map(d=>{ const m=state.mastery[d.key]||0; return (<div key={d.key} className="flex items-center gap-4"><div className="w-48 flex items-center gap-2.5 text-[14px]"><span className="gradtext">{d.icon}</span>{d.label}</div><div className="flex-1"><Bar pct={m}/></div><div className="w-16 text-right text-[13px] tabular-nums text-mute">{m}%{m>=100?' 🏆':m>=70?' ✓':''}</div></div>); })}</div></div>
-      <div className="card p-6 relative overflow-hidden"><div className="absolute -top-16 -right-16 w-40 h-40 bg-indigo/20 blur-3xl rounded-full"/><div className="relative"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl btn-primary grid place-items-center text-sm">✦</div><div className="text-[11px] uppercase tracking-[.2em] text-mute">AI coach insights</div></div><p className="mt-4 text-[14px] text-slate-200 leading-relaxed">{state.solved.length===0?`"Run your first scenario and I'll start mapping your strengths."`:`"You're strongest in ${strong.label} (${state.mastery[strong.key]||0}%). I've queued targeted ${weak.label} scenarios to lift your weakest area."`}</p><button onClick={()=>setRoute('challenge')} className="btn-ghost mt-5 w-full py-2.5 rounded-xl text-[13.5px] font-medium">Train weak spot →</button></div></div>
+      <div className="card p-6 relative overflow-hidden"><div className="absolute -top-16 -right-16 w-40 h-40 bg-indigo/20 blur-3xl rounded-full"/><div className="relative"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl btn-primary grid place-items-center text-sm">✦</div><div className="text-[11px] uppercase tracking-[.2em] text-mute">Coach insights</div></div><p className="mt-4 text-[14px] text-slate-200 leading-relaxed">{state.solved.length===0?`"Run your first scenario and I'll start mapping your strengths."`:`"You're strongest in ${strong.label} (${state.mastery[strong.key]||0}%). I've queued targeted ${weak.label} scenarios to lift your weakest area."`}</p><button onClick={()=>setRoute('challenge')} className="btn-ghost mt-5 w-full py-2.5 rounded-xl text-[13.5px] font-medium">Train weak spot →</button></div></div>
     </div>
     <div className="mt-5 grid lg:grid-cols-3 gap-5 mb-6">
       <div className="card p-6 relative overflow-hidden"><div className="absolute -bottom-16 -left-10 w-44 h-44 bg-gold/15 blur-3xl rounded-full"/><div className="relative"><Chip tone="gold">◆ Refer & earn</Chip><h3 className="display text-xl mt-3">Invite your team</h3><p className="text-[13px] text-mute mt-2 leading-relaxed">Share your code. When a colleague certifies, you both earn <b className="text-white">+500 XP</b> and a bonus scenario pack.</p><div className="mt-4 flex items-center gap-2"><code className="flex-1 text-center bg-white/[.04] border border-line rounded-xl py-2.5 text-[14px] tracking-widest goldtext font-semibold">{((state.auth?.name||'PM').split(' ')[0]).toUpperCase().slice(0,8)}-PM49</code><button onClick={()=>setCopied(true)} className="btn-gold px-4 py-2.5 rounded-xl text-[13px]">{copied?'Copied ✓':'Copy'}</button></div></div></div>
@@ -723,7 +727,32 @@ function Dashboard({state, setRoute, openGate}){
 }
 
 /* ============================== APP ============================== */
-const initial = { auth:null, pmp:0, level:1, streak:9, premium:false, certified:false, score:0, solved:[], badges:[], missions:[], log:[], mastery:{ risk:20, stake:20, plan:30, agile:15, budget:10 } };
+function ResetPassword({setRoute}){
+  const inp="w-full px-4 py-3 rounded-xl bg-white/[.03] border border-line text-[14px] focus:border-indigo outline-none transition";
+  const [pw,setPw]=useState(''),[show,setShow]=useState(false),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[done,setDone]=useState(false);
+  const submit=async()=>{
+    if(pw.length<6){ setErr('Password must be at least 6 characters.'); return; }
+    setErr(''); setBusy(true);
+    const { error }=await updatePassword(pw);
+    setBusy(false);
+    if(error) setErr(error.message); else setDone(true);
+  };
+  return (<div className="max-w-md mx-auto px-6 py-16"><div className="card ring-soft p-8 animate-rise">
+    <div className="flex items-center gap-2.5"><span className="grid place-items-center w-9 h-9 rounded-xl btn-primary text-base">◆</span><span className="font-semibold text-[17px]">PM <span className="gradtext">Sim Lab</span></span></div>
+    {done ? (<>
+      <h1 className="display text-3xl mt-5">Password updated</h1>
+      <p className="text-mute text-[14px] mt-1.5">You're all set — your new password is active.</p>
+      <button onClick={()=>setRoute('dashboard')} className="btn-primary w-full mt-6 py-3 rounded-xl text-[15px]">Continue →</button>
+    </>) : (<>
+      <h1 className="display text-3xl mt-5">Set a new password</h1>
+      <p className="text-mute text-[14px] mt-1.5">Choose a new password for your account.</p>
+      <div className="relative mt-5"><input type={show?'text':'password'} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submit()} placeholder="New password" className={inp+' pr-16'}/><button onClick={()=>setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-mute hover:text-white">{show?'hide':'show'}</button></div>
+      {err && <p className="text-bad text-[12.5px] mt-3">{err}</p>}
+      <button onClick={submit} disabled={busy} className="btn-primary w-full mt-4 py-3 rounded-xl text-[15px] disabled:opacity-60">{busy?'Saving…':'Update password →'}</button>
+    </>)}
+  </div></div>);
+}
+const initial = { auth:null, pmp:0, level:1, streak:0, premium:false, certified:false, score:0, solved:[], badges:[], missions:[], log:[], mastery:{ risk:20, stake:20, plan:30, agile:15, budget:10 } };
 function reducer(s, a){
   switch(a.type){
     case 'login': return {...s, auth:{name:a.name, email:a.email}};
@@ -740,13 +769,19 @@ function loadState(){ try{ const raw=localStorage.getItem('pmq_state'); if(raw){
 export default function App(){
   const [route,setRoute]=useState('home'); const [state,setState]=useState(initial); const [pending,setPending]=useState(null); const [chartTab,setChartTab]=useState('gantt');
   const [theme,setTheme]=useState('light'); const [hydrated,setHydrated]=useState(false); const [userId,setUserId]=useState(null);
+  const [unlocking,setUnlocking]=useState('idle'); // idle | working | slow — Stripe return state
+  const mainRef=useRef(null); const didMount=useRef(false);
   const dispatch=(a)=>setState(s=>reducer(s,a));
 
   // Hydrate from the localStorage offline cache after mount (avoids SSR/hydration mismatch).
   useEffect(()=>{ setState(loadState()); try{ const t=localStorage.getItem('pmq_theme'); if(t) setTheme(t); }catch(e){} setHydrated(true); },[]);
+  // Honest day-based streak: +1 on a new active day, reset to 1 if a day was missed.
+  useEffect(()=>{ if(!hydrated) return; try{ const today=new Date().toISOString().slice(0,10); const last=localStorage.getItem('pmq_lastActive'); if(last!==today){ const y=new Date(Date.now()-864e5).toISOString().slice(0,10); setState(s=>({...s, streak: last===y ? (s.streak||0)+1 : 1})); localStorage.setItem('pmq_lastActive', today); } }catch(e){}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[hydrated]);
   useEffect(()=>{ if(hydrated){ try{ localStorage.setItem('pmq_state', JSON.stringify(state)); }catch(e){} } },[state, hydrated]);
   useEffect(()=>{ document.body.classList.toggle('light', theme==='light'); try{ localStorage.setItem('pmq_theme', theme); }catch(e){} },[theme]);
-  useEffect(()=>{ window.scrollTo(0,0); },[route]);
+  useEffect(()=>{ window.scrollTo(0,0); if(didMount.current) mainRef.current?.focus(); else didMount.current=true; },[route]);
 
   // Returning from Stripe Checkout: the webhook grants the entitlement async, so poll
   // loadRemoteState until premium shows up, then drop the user on the dashboard.
@@ -757,13 +792,16 @@ export default function App(){
     if(!status) return;
     window.history.replaceState({}, '', window.location.pathname);
     if(status!=='success') return;
+    setUnlocking('working');
     (async()=>{
-      for(let i=0;i<6;i++){
+      let granted=false;
+      for(let i=0;i<20;i++){ // poll up to ~30s for the webhook to grant the entitlement
         const s=await getSession();
-        if(s?.user){ const remote=await loadRemoteState(s.user.id); if(remote){ setState(x=>({...x,...remote})); if(remote.premium) break; } }
+        if(s?.user){ const remote=await loadRemoteState(s.user.id); if(remote){ setState(x=>({...x,...remote})); if(remote.premium){ granted=true; break; } } }
         await new Promise(r=>setTimeout(r,1500));
       }
-      setRoute('dashboard');
+      if(granted){ setUnlocking('idle'); setRoute('dashboard'); }
+      else { setUnlocking('slow'); } // payment ok but webhook lagging — offer manual refresh
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
@@ -777,7 +815,8 @@ export default function App(){
       if(session?.user) await hydrateUser(session.user);
       else setState(s=> s.auth? {...s, auth:null} : s);
     })();
-    const unsub=onAuthChange(async(session)=>{
+    const unsub=onAuthChange(async(event, session)=>{
+      if(event==='PASSWORD_RECOVERY'){ setRoute('reset'); if(session?.user) await hydrateUser(session.user); return; }
       if(session?.user) await hydrateUser(session.user);
       else { setUserId(null); setState({...initial}); }
     });
@@ -823,6 +862,22 @@ export default function App(){
   const onLogin=(name,email)=>{ dispatch({type:'login',name,email}); const dest=(pending&&PROTECTED.includes(pending))?pending:'dashboard'; setPending(null); setRoute(dest); };
   const onLogout=async()=>{ await signOut(); syncedRef.current=new Set(); certIssuedRef.current=false; setUserId(null); dispatch({type:'logout'}); setRoute('home'); };
   return (<>
+  {unlocking!=='idle' && (<div style={{position:'fixed',inset:0,zIndex:100,background:'rgba(6,8,15,.82)',backdropFilter:'blur(6px)'}} className="grid place-items-center px-6">
+    <div className="card ring-soft p-8 max-w-sm w-full text-center">
+      {unlocking==='working' ? (<>
+        <div className="w-12 h-12 mx-auto rounded-full btn-primary grid place-items-center text-xl animate-pop">✓</div>
+        <h2 className="display text-2xl mt-4">Unlocking your access…</h2>
+        <p className="text-mute text-[14px] mt-2">Payment received. Confirming your certification track — this takes a few seconds.</p>
+        <div className="mt-5"><Bar pct={100}/></div>
+      </>) : (<>
+        <div className="w-12 h-12 mx-auto rounded-full grid place-items-center text-xl" style={{background:'rgba(251,191,36,.15)',color:'#fbbf24'}}>⏳</div>
+        <h2 className="display text-2xl mt-4">Taking a little longer…</h2>
+        <p className="text-mute text-[14px] mt-2">Your payment went through. Access usually unlocks within a minute — refresh to check, or reach support if it persists.</p>
+        <button onClick={()=>{ if(typeof window!=='undefined') window.location.reload(); }} className="btn-primary mt-5 px-6 py-3 rounded-xl text-[14px]">Refresh now</button>
+        <button onClick={()=>{ setUnlocking('idle'); setRoute('dashboard'); }} className="btn-ghost mt-2 px-6 py-2.5 rounded-xl text-[13px] block w-full">Go to dashboard</button>
+      </>)}
+    </div>
+  </div>)}
   <div className="aurora" aria-hidden="true">
     <div className="blob animate-drift1" style={{width:520,height:520,left:'-8%',top:'-10%',background:'radial-gradient(circle,#6d6bf5,transparent 70%)'}}/>
     <div className="blob animate-drift2" style={{width:560,height:560,right:'-10%',top:'8%',background:'radial-gradient(circle,#5ec5ff,transparent 70%)',opacity:.35}}/>
@@ -830,15 +885,18 @@ export default function App(){
   </div>
   <div className="min-h-screen" style={{position:'relative',zIndex:2}}>
     <div className="no-print"><Nav route={route} setRoute={navigate} state={state} theme={theme} setTheme={setTheme} onLogout={onLogout}/></div>
+    <main ref={mainRef} tabIndex={-1} className="outline-none">
     {route==='home' && <Home setRoute={navigate}/>}
     {route==='login' && <Login onLogin={onLogin} setRoute={navigate}/>}
+    {route==='reset' && <ResetPassword setRoute={navigate}/>}
     {route==='payment' && <Payment state={state} onPaid={()=>dispatch({type:'premium'})} setRoute={navigate}/>}
     {route==='challenge' && <Challenge state={state} dispatch={dispatch} setRoute={navigate} openChart={openChart}/>}
     {route==='charts' && <ChartsLab initial={chartTab} state={state} dispatch={dispatch}/>}
     {route==='exam' && <Exam state={state} dispatch={dispatch} setRoute={navigate}/>}
     {route==='cert' && <Certificate state={state} setRoute={navigate}/>}
     {route==='dashboard' && <Dashboard state={state} setRoute={navigate} openGate={()=>navigate('payment')}/>}
-    <footer className="no-print border-t border-line mt-8"><div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] text-mute"><div className="flex items-center gap-2.5"><span className="grid place-items-center w-7 h-7 rounded-lg btn-primary text-[12px]">◆</span>PM <span className="gradtext font-semibold">Sim Lab</span></div><p className="text-mute2">Interactive prototype · scenarios & feedback are AI-generated at runtime in production.</p></div></footer>
+    </main>
+    <footer className="no-print border-t border-line mt-8"><div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] text-mute"><div className="flex items-center gap-2.5"><span className="grid place-items-center w-7 h-7 rounded-lg btn-primary text-[12px]">◆</span>PM <span className="gradtext font-semibold">Sim Lab</span></div><p className="text-mute2">Practice-first PM training · scenarios &amp; coaching crafted by practitioners.</p></div></footer>
   </div>
   </>);
 }

@@ -30,6 +30,18 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
+export async function resetPassword(email) {
+  if (!isSupabaseConfigured) return notConfigured;
+  const redirectTo =
+    typeof window !== "undefined" ? window.location.origin : undefined;
+  return supabase.auth.resetPasswordForEmail(email, { redirectTo });
+}
+
+export async function updatePassword(password) {
+  if (!isSupabaseConfigured) return notConfigured;
+  return supabase.auth.updateUser({ password });
+}
+
 export async function getSession() {
   if (!isSupabaseConfigured) return null;
   const { data } = await supabase.auth.getSession();
@@ -44,8 +56,8 @@ export async function getAccessToken() {
 // Subscribe to auth changes. Returns an unsubscribe fn.
 export function onAuthChange(cb) {
   if (!isSupabaseConfigured) return () => {};
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    cb(session);
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    cb(event, session);
   });
   return () => data?.subscription?.unsubscribe();
 }
