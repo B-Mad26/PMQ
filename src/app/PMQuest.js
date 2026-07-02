@@ -331,8 +331,8 @@ function Home({setRoute}){
 
       <section className="py-16 border-t border-line"><div className="grid lg:grid-cols-[1fr,.8fr] gap-6 items-stretch">
         <div className="card p-8"><Kicker>What you get for $49</Kicker><h2 className="display text-3xl mt-4">A full certification path — one price, lifetime access.</h2>
-          <div className="mt-6 grid sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">{[`${SCENARIOS.length} adaptive crisis scenarios`,'Five chart builders + project briefs','Ask-the-coach help on any question','Timed certification exam','Shareable certificate + LinkedIn badge','Light & dark themes','Adaptive difficulty engine','Referral rewards for your team'].map(x=>(<div key={x} className="flex items-center gap-2.5 text-slate-200"><span className="text-good">✓</span>{x}</div>))}</div></div>
-        <div className="card ring-soft p-8 flex flex-col justify-center text-center relative overflow-hidden"><div className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-48 bg-gold/15 blur-3xl"/><div className="relative"><Chip tone="gold">◆ Best value in PM training</Chip><div className="display text-6xl goldtext mt-5">$49</div><div className="text-mute text-[13px] mt-1">one-time · vs $200+/yr for video courses</div><button onClick={()=>setRoute('challenge')} className="btn-gold mt-6 w-full py-3.5 rounded-2xl">Start free, certify for $49 →</button><p className="mt-3 text-[12px] text-mute2">Refer a colleague — you both earn rewards.</p></div></div>
+          <div className="mt-6 grid sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">{[`${SCENARIOS.length} realistic crisis scenarios`,'Five chart builders + project briefs','Ask-the-coach help on any question','Timed certification exam','Shareable, verifiable certificate','Light & dark themes','Difficulty-rated scenarios (1–5★)','Print-ready PDF certificate'].map(x=>(<div key={x} className="flex items-center gap-2.5 text-slate-200"><span className="text-good">✓</span>{x}</div>))}</div></div>
+        <div className="card ring-soft p-8 flex flex-col justify-center text-center relative overflow-hidden"><div className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-48 bg-gold/15 blur-3xl"/><div className="relative"><Chip tone="gold">◆ Best value in PM training</Chip><div className="display text-6xl goldtext mt-5">$49</div><div className="text-mute text-[13px] mt-1">one-time · vs $200+/yr for video courses</div><button onClick={()=>setRoute('challenge')} className="btn-gold mt-6 w-full py-3.5 rounded-2xl">Start free, certify for $49 →</button><p className="mt-3 text-[12px] text-mute2">One-time payment · lifetime access, no subscription.</p></div></div>
       </div></section>
 
       <TeamCTA/>
@@ -539,7 +539,7 @@ function Payment({state, onPaid, setRoute}){
           <Kicker>Order summary</Kicker>
           <h2 className="display text-2xl mt-4">PM Sim Lab — Certification Track</h2>
           <p className="text-mute text-[13.5px] mt-1">One-time payment · lifetime access</p>
-          <div className="mt-5 space-y-2.5 text-[14px]">{['Stages 4–6 — branching crisis simulations','Continuous capstone project','Five chart builders + project briefs','Timed exam + shareable certificate','Lifetime updates & new scenario packs'].map(x=>(<div key={x} className="flex items-center gap-2.5 text-slate-200"><span className="text-good">✓</span>{x}</div>))}</div>
+          <div className="mt-5 space-y-2.5 text-[14px]">{['All crisis scenarios — incl. Senior PM crises','Five hands-on chart builders','Timed certification exam','Shareable, verifiable certificate','Lifetime access — no subscription'].map(x=>(<div key={x} className="flex items-center gap-2.5 text-slate-200"><span className="text-good">✓</span>{x}</div>))}</div>
           <div className="divider my-5"/>
           <div className="space-y-2 text-[14px]"><div className="flex justify-between text-mute"><span>Certification Track</span><span>$49.00</span></div><div className="flex justify-between text-mute"><span>Tax</span><span>$0.00</span></div><div className="flex justify-between font-semibold text-[16px] mt-1"><span>Total due</span><span className="goldtext">$49.00</span></div></div>
           <div className="mt-5 rounded-xl border border-good/30 bg-good/[.06] p-3 text-[12.5px] text-good">✓ Lifetime access · one-time payment, no subscription.</div>
@@ -620,8 +620,8 @@ function Challenge({state, dispatch, setRoute, openChart}){
         {!submitted && (showHint?<p className="mt-3 text-[13.5px] text-warn bg-warn/[.07] border border-warn/25 rounded-2xl p-4 animate-rise leading-relaxed">💡 Identify what's relevant vs noise, then pick the option that protects the project's core objective — not the easiest or loudest one.</p>:<button onClick={()=>{setShowHint(true);setUsedHint(true);}} className="btn-ghost mt-3 w-full text-[13.5px] py-2.5 rounded-xl">💡 Reveal hint <span className="text-mute2">(−10 XP)</span></button>)}
         <AskMira sc={sc}/>
         {sc.chart && <button onClick={()=>openChart(sc.chart)} className="btn-ghost mt-3 w-full text-[13.5px] py-2.5 rounded-xl">↗ Practise the {chartName} chart</button>}
-        <div className="divider my-6"/><div className="text-[11px] uppercase tracking-[.2em] text-mute">Adaptive engine</div>
-        <p className="mt-3 text-[13.5px] text-slate-300 leading-relaxed">{state.solved.length===0?"Calibrating to your baseline — difficulty adjusts to every answer.":`Tracking ${state.solved.length}/${SCENARIOS.length} solved. ${state.premium?'Premium crises unlocked.':'Clear the free track to face Senior PM crises.'}`}</p>
+        <div className="divider my-6"/><div className="text-[11px] uppercase tracking-[.2em] text-mute">Your progress</div>
+        <p className="mt-3 text-[13.5px] text-slate-300 leading-relaxed">{state.solved.length===0?"Make your first call to start tracking your strengths across the five domains.":`Tracking ${state.solved.length}/${SCENARIOS.length} solved. ${state.premium?'Premium crises unlocked.':'Clear the free track to face Senior PM crises.'}`}</p>
         <div className="mt-4 flex items-center justify-between text-[11px] text-mute mb-2"><span>Current difficulty</span><span>{sc.difficulty}/5</span></div><Bar pct={clamp(sc.difficulty*20,10,100)}/>
       </div>
     </div>
@@ -719,7 +719,7 @@ function Dashboard({state, setRoute, openGate}){
       <div className="card p-6 relative overflow-hidden"><div className="absolute -top-16 -right-16 w-40 h-40 bg-indigo/20 blur-3xl rounded-full"/><div className="relative"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl btn-primary grid place-items-center text-sm">✦</div><div className="text-[11px] uppercase tracking-[.2em] text-mute">Coach insights</div></div><p className="mt-4 text-[14px] text-slate-200 leading-relaxed">{state.solved.length===0?`"Run your first scenario and I'll start mapping your strengths."`:`"You're strongest in ${strong.label} (${state.mastery[strong.key]||0}%). I've queued targeted ${weak.label} scenarios to lift your weakest area."`}</p><button onClick={()=>setRoute('challenge')} className="btn-ghost mt-5 w-full py-2.5 rounded-xl text-[13.5px] font-medium">Train weak spot →</button></div></div>
     </div>
     <div className="mt-5 grid lg:grid-cols-3 gap-5 mb-6">
-      <div className="card p-6 relative overflow-hidden"><div className="absolute -bottom-16 -left-10 w-44 h-44 bg-gold/15 blur-3xl rounded-full"/><div className="relative"><Chip tone="gold">◆ Refer & earn</Chip><h3 className="display text-xl mt-3">Invite your team</h3><p className="text-[13px] text-mute mt-2 leading-relaxed">Share your code. When a colleague certifies, you both earn <b className="text-white">+500 XP</b> and a bonus scenario pack.</p><div className="mt-4 flex items-center gap-2"><code className="flex-1 text-center bg-white/[.04] border border-line rounded-xl py-2.5 text-[14px] tracking-widest goldtext font-semibold">{((state.auth?.name||'PM').split(' ')[0]).toUpperCase().slice(0,8)}-PM49</code><button onClick={()=>setCopied(true)} className="btn-gold px-4 py-2.5 rounded-xl text-[13px]">{copied?'Copied ✓':'Copy'}</button></div></div></div>
+      <div className="card p-6 relative overflow-hidden"><div className="absolute -bottom-16 -left-10 w-44 h-44 bg-gold/15 blur-3xl rounded-full"/><div className="relative"><Chip tone="gold">◆ Share PM Sim Lab</Chip><h3 className="display text-xl mt-3">Invite your team</h3><p className="text-[13px] text-mute mt-2 leading-relaxed">Bringing your PMO? Team plans add shared progress and a manager dashboard. Share the link, or ask us about teams.</p><div className="mt-4 flex items-center gap-2"><code className="flex-1 text-center bg-white/[.04] border border-line rounded-xl py-2.5 text-[13px] goldtext font-semibold truncate">{typeof window!=='undefined'?window.location.host:'pmsimlab'}</code><button onClick={()=>{ try{navigator.clipboard?.writeText(typeof window!=='undefined'?window.location.origin:'');}catch(e){} setCopied(true); }} className="btn-gold px-4 py-2.5 rounded-xl text-[13px]">{copied?'Copied ✓':'Copy link'}</button></div></div></div>
       <div className="card p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Achievements</div><div className="mt-4 flex flex-wrap gap-2"><span className="text-[12px] text-mute2 w-full mb-1">{state.badges.length}/{allBadges.length} unlocked</span>{allBadges.map(b=>{ const has=state.badges.includes(b); return <div key={b} className={`px-2.5 py-1.5 rounded-lg border text-[11.5px] flex items-center gap-1.5 transition ${has?'border-good/40 bg-good/[.07] text-white':'border-line text-mute2'}`}><span className={has?'':'opacity-40'}>{has?'🏅':'◇'}</span>{b}</div>; })}</div></div>
       <div className="card p-6"><div className="text-[11px] uppercase tracking-[.2em] text-mute">Recent activity</div><div className="mt-4 space-y-3 text-[14px]">{state.log.length===0&&<p className="text-mute2">No activity yet — go solve something.</p>}{state.log.slice(-6).reverse().map((l,i)=>(<div key={i} className="flex items-center justify-between border-b border-line/60 pb-2.5 last:border-0"><span className="text-slate-300 flex items-center gap-2"><span className="text-good">✓</span>{l.title}</span><span className="gradtext font-medium">+{l.pts}</span></div>))}</div></div>
     </div>
@@ -770,18 +770,18 @@ export default function App(){
   const [route,setRoute]=useState('home'); const [state,setState]=useState(initial); const [pending,setPending]=useState(null); const [chartTab,setChartTab]=useState('gantt');
   const [theme,setTheme]=useState('light'); const [hydrated,setHydrated]=useState(false); const [userId,setUserId]=useState(null);
   const [unlocking,setUnlocking]=useState('idle'); // idle | working | slow — Stripe return state
-  const mainRef=useRef(null); const didMount=useRef(false);
+  const mainRef=useRef(null); const focusNext=useRef(false);
   const dispatch=(a)=>setState(s=>reducer(s,a));
 
   // Hydrate from the localStorage offline cache after mount (avoids SSR/hydration mismatch).
   useEffect(()=>{ setState(loadState()); try{ const t=localStorage.getItem('pmq_theme'); if(t) setTheme(t); }catch(e){} setHydrated(true); },[]);
   // Honest day-based streak: +1 on a new active day, reset to 1 if a day was missed.
-  useEffect(()=>{ if(!hydrated) return; try{ const today=new Date().toISOString().slice(0,10); const last=localStorage.getItem('pmq_lastActive'); if(last!==today){ const y=new Date(Date.now()-864e5).toISOString().slice(0,10); setState(s=>({...s, streak: last===y ? (s.streak||0)+1 : 1})); localStorage.setItem('pmq_lastActive', today); } }catch(e){}
+  useEffect(()=>{ if(!hydrated) return; try{ const today=new Date().toISOString().slice(0,10); const last=localStorage.getItem('pmq_lastActive'); if(last!==today){ const y=new Date(Date.now()-864e5).toISOString().slice(0,10); setState(s=>{ const cur=s.streak||0; const streak = last===y ? cur+1 : (last ? 1 : Math.max(cur,1)); return {...s, streak}; }); localStorage.setItem('pmq_lastActive', today); } }catch(e){}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[hydrated]);
   useEffect(()=>{ if(hydrated){ try{ localStorage.setItem('pmq_state', JSON.stringify(state)); }catch(e){} } },[state, hydrated]);
   useEffect(()=>{ document.body.classList.toggle('light', theme==='light'); try{ localStorage.setItem('pmq_theme', theme); }catch(e){} },[theme]);
-  useEffect(()=>{ window.scrollTo(0,0); if(didMount.current) mainRef.current?.focus(); else didMount.current=true; },[route]);
+  useEffect(()=>{ window.scrollTo(0,0); if(focusNext.current){ mainRef.current?.focus(); focusNext.current=false; } },[route]);
 
   // Returning from Stripe Checkout: the webhook grants the entitlement async, so poll
   // loadRemoteState until premium shows up, then drop the user on the dashboard.
@@ -857,7 +857,7 @@ export default function App(){
     }
   },[userId, state.certified]);
 
-  const navigate=(r)=>{ if(PROTECTED.includes(r)&&!state.auth){ setPending(r); setRoute('login'); return; } setRoute(r); };
+  const navigate=(r)=>{ focusNext.current=true; if(PROTECTED.includes(r)&&!state.auth){ setPending(r); setRoute('login'); return; } setRoute(r); };
   const openChart=(k)=>{ setChartTab(k); navigate('charts'); };
   const onLogin=(name,email)=>{ dispatch({type:'login',name,email}); const dest=(pending&&PROTECTED.includes(pending))?pending:'dashboard'; setPending(null); setRoute(dest); };
   const onLogout=async()=>{ await signOut(); syncedRef.current=new Set(); certIssuedRef.current=false; setUserId(null); dispatch({type:'logout'}); setRoute('home'); };
